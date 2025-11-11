@@ -15,7 +15,7 @@ function G_of_u!(G_of_u::Sequence, u::Sequence, G::Function, N_fft::Int64)
     u_pad = project(u, S_pad)
 
     # Evaluate the fourier series at grid points using the IFFT
-    grid_points = Sequence(S_pad, [N_fft * FFTW.ifft(FFTW.ifftshift(u_pad.coefficients[begin:end-1])); 0])
+    grid_points = Sequence(S_pad, [FFTW.fft(FFTW.ifftshift(u_pad.coefficients[begin:end-1])); 0])
 
     # Evaluate the function at the grid points
     eval_points = zeros(ComplexF64, S_pad)
@@ -24,8 +24,10 @@ function G_of_u!(G_of_u::Sequence, u::Sequence, G::Function, N_fft::Int64)
         eval_points[n] = G(grid_points[n])
     end
 
+    println(eval_points.coefficients[begin:end-1])
+
     # Use the FFT to obtain the coefficients of G(u)
-    G_of_u.coefficients[:] = project(Sequence(S_pad, [1/N_fft * FFTW.fftshift(FFTW.fft(eval_points.coefficients[begin:end-1]));0]), S).coefficients[:]
+    G_of_u.coefficients[:] = project(Sequence(S_pad, [FFTW.fftshift(FFTW.ifft(eval_points.coefficients[begin:end-1]));0]), S).coefficients[:]
 end
 
 function G_of_u_vec!(G_of_u::Sequence, u::Sequence, G::Function, N_fft::Int64)
@@ -48,7 +50,7 @@ function G_of_u_vec!(G_of_u::Sequence, u::Sequence, G::Function, N_fft::Int64)
     # Evaluate the fourier series at grid points using the IFFT
     grid_points = zeros(ComplexF64, dim, N_fft)
     for i ∈ 1:dim
-        grid_points[i,:] = N_fft * FFTW.ifft(FFTW.ifftshift(component(u_pad,i).coefficients[begin:end-1]))
+        grid_points[i,:] = FFTW.fft(FFTW.ifftshift(component(u_pad,i).coefficients[begin:end-1]))
     end
 
     # Evaluate the function at the grid points
@@ -61,7 +63,7 @@ function G_of_u_vec!(G_of_u::Sequence, u::Sequence, G::Function, N_fft::Int64)
     # Use the FFT to obtain the coefficients of G(u)
     fourier_coeffs = zeros(ComplexF64, dim, N_fft)
     for i ∈ 1:dim
-        fourier_coeffs[i,:] = 1/N_fft * FFTW.fftshift(FFTW.fft(eval_points[i,:]))
+        fourier_coeffs[i,:] = FFTW.fftshift(FFTW.ifft(eval_points[i,:]))
     end
 
     for i ∈ 1:dim
@@ -89,7 +91,7 @@ function G_of_u_mat!(G_of_u::LinearOperator, u::Sequence, G::Function, N_fft::In
     # Evaluate the fourier series at grid points using the IFFT
     grid_points = zeros(ComplexF64, dim, N_fft)
     for i ∈ 1:dim
-        grid_points[i,:] = N_fft * FFTW.ifft(FFTW.ifftshift(component(u_pad,i).coefficients[begin:end-1]))
+        grid_points[i,:] = FFTW.fft(FFTW.ifftshift(component(u_pad,i).coefficients[begin:end-1]))
     end
 
     # Evaluate the function at the grid points
@@ -103,7 +105,7 @@ function G_of_u_mat!(G_of_u::LinearOperator, u::Sequence, G::Function, N_fft::In
     fourier_coeffs = zeros(ComplexF64, dim, dim, N_fft)
     for i ∈ 1:dim
         for j ∈ 1:dim
-            fourier_coeffs[i,j,:] = 1/N_fft * FFTW.fftshift(FFTW.fft(eval_points[i,j,:]))
+            fourier_coeffs[i,j,:] = FFTW.fftshift(FFTW.ifft(eval_points[i,j,:]))
         end
     end
 
@@ -114,7 +116,7 @@ function G_of_u_mat!(G_of_u::LinearOperator, u::Sequence, G::Function, N_fft::In
     end     
 end
 
-function Newton(u::Sequence, F::Sequence, DF::LinearOperator, tol::Float64 = 1e-12, max_iter::Int64 = 20)
+function Newton(u::Sequence, F::Sequence, DF::LinearOperator, tol::Float64 = 1e-12, max_iter::Int64 = 50)
     count = 0;
     F!(F, u, N_fft)
     DF!(DF, u, N_fft)
@@ -137,4 +139,46 @@ function collection_eval(time_data::Vector{Float64}, u::Sequence)
 
 
     return space_data
+end
+
+function kepler_sample(ψ::Vector{Float64},e::Float64, ϕ::Float64, N_fft::Int64)
+    # Compting constant c
+    f_int(θ,p) = (1+e*cos(θ))^-2
+    prob = Integrals.IntegralProblem(f_int, (0.0,2*pi))
+    c = (2*pi / Integrals.solve(prob, Integrals.QuadGKJL()).u)^(1/3)
+
+    # Solving ODE for θ, r, x, y, z
+    f_ode(θ,p,t) = c^(-3) * (1+e*cos(θ))^2
+    prob = DifferentialEquations.ODEProblem(f_ode, ϕ, (-pi, pi))
+    sol = DifferentialEquations.solve(prob, DifferentialEquations.Tsit5(), saveat = LinRange(-pi,pi,N_fft+1))
+    θ_grid = sol.u[begin:end-1]
+    point_grid = zeros(3, N_fft)
+    for i ∈ 1:N_fft
+        r = c^2 / (1+e*cos(θ_grid[i]))
+        point_grid[1,i] = r*cos(θ_grid[i])
+        point_grid[2,i] = r*sin(θ_grid[i])
+    end
+    
+    # Building the rotation matrix and applying the rotation
+    J₁ = [
+        0 0 0
+        0 0 -1
+        0 1 0
+    ]
+
+    J₂ = [
+        0 0 -1
+        0 0 0
+        1 0 0
+    ]
+
+    J₃ = [
+        0 -1 0
+        1 0 0
+        0 0 0
+    ]
+
+    rot = exp(Ψ[1]*J₁ + Ψ[2]*J₂ + Ψ[3]*J₃)
+
+    return rot * point_grid, sol.t[begin:end-1]
 end
