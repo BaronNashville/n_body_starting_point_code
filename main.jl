@@ -5,8 +5,11 @@ include("helpers.jl")
 include("float_functions.jl")
 include("approx_derivatives.jl")
 
+__save__ = true
+__save_location__ = "./figures/"
+
 # Number of fourier coefficients we want
-N = 10
+N = 50
 # Computing projection into higher space for FFT
 N_fft = nextpow(2, 2*N+1)
 
@@ -19,7 +22,7 @@ N_fft = nextpow(2, 2*N+1)
 # Angles of rotation
 # ψ = [rotation about x axis, rotation about y-axis, rotation about z-axis]
 Ψ = [0.0;0.0;0.0]
-e = 0.1
+e = 0.9
 ϕ = 0.0
 
 sample_points, sample_time = kepler_sample(Ψ, e, ϕ, N_fft)
@@ -57,7 +60,7 @@ display(abs.(LinearAlgebra.eigvals(DF.coefficients)))
 time_data = collect(LinRange(-pi, pi, 1000))
 u_data = collection_eval(time_data, u)
 
-sol_plot = Figure()
+sol_plot = Figure(size = (1000, 600))
 sol_ax = Axis3(sol_plot[1,1], title = L"\text{Approximate solution to the Kepler problem}", 
     titlesize = 20,
     xlabel = L"$u_1$",
@@ -93,7 +96,11 @@ GLMakie.scatter!(sol_ax,
 axislegend("Legend")
 display(GLMakie.Screen(), sol_plot)
 
-coordinates_plot = Figure()
+if __save__
+    save(string(__save_location__, "ellipse_sol" * string(e) * ".png"), sol_plot, px_per_unit = 8)
+end
+
+coordinates_plot = Figure(size = (1600, 600))
 x_ax = Axis(coordinates_plot[1,1], title = L"\text{$x$-coordinate of approximate solution}", 
     titlesize = 20,
     xlabel = L"$t$",
@@ -182,3 +189,7 @@ GLMakie.scatter!(z_ax,
 axislegend("Legend")
 
 display(GLMakie.Screen(), coordinates_plot)
+
+if __save__
+    save(string(__save_location__, "coordinates_sol" * string(e) * ".png"), coordinates_plot, px_per_unit = 8)
+end
