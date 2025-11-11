@@ -145,12 +145,12 @@ function kepler_sample(ψ::Vector{Float64},e::Float64, ϕ::Float64, N_fft::Int64
     # Compting constant c
     f_int(θ,p) = (1+e*cos(θ))^-2
     prob = Integrals.IntegralProblem(f_int, (0.0,2*pi))
-    c = (2*pi / Integrals.solve(prob, Integrals.QuadGKJL()).u)^(1/3)
+    c = (2*pi / Integrals.solve(prob, Integrals.QuadGKJL(); reltol = 1e-14).u)^(1/3)
 
     # Solving ODE for θ, r, x, y, z
     f_ode(θ,p,t) = c^(-3) * (1+e*cos(θ))^2
     prob = DifferentialEquations.ODEProblem(f_ode, ϕ, (-pi, pi))
-    sol = DifferentialEquations.solve(prob, DifferentialEquations.Tsit5(), saveat = LinRange(-pi,pi,N_fft+1))
+    sol = DifferentialEquations.solve(prob, DifferentialEquations.Tsit5(), reltol = 1e-14, saveat = LinRange(-pi,pi,N_fft+1))
     θ_grid = sol.u[begin:end-1]
     point_grid = zeros(3, N_fft)
     for i ∈ 1:N_fft

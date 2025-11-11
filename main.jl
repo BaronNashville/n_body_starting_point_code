@@ -5,13 +5,13 @@ include("helpers.jl")
 include("float_functions.jl")
 include("approx_derivatives.jl")
 
-__save__ = true
+__save__ = false
 __save_location__ = "./figures/"
 
 # Number of fourier coefficients we want
-N = 50
+N::Int64 = 1000
 # Computing projection into higher space for FFT
-N_fft = nextpow(2, 2*N+1)
+N_fft::Int64 = nextpow(2, 2*N+1)
 
 # Defining the space we are working in
 ℱ = Fourier(N,1.0)
@@ -21,9 +21,9 @@ N_fft = nextpow(2, 2*N+1)
 
 # Angles of rotation
 # ψ = [rotation about x axis, rotation about y-axis, rotation about z-axis]
-Ψ = [0.0;0.0;0.0]
-e = 0.9
-ϕ = 0.0
+Ψ::Vector{Float64} = [0;0;0]
+e::Float64 = 0.9
+ϕ::Float64 = 0
 
 sample_points, sample_time = kepler_sample(Ψ, e, ϕ, N_fft)
 
@@ -44,7 +44,7 @@ F!(F, u, N_fft)
 println(norm(F))
 
 DF!(DF, u, N_fft)
-display(abs.(LinearAlgebra.eigvals(DF.coefficients)))
+#display(abs.(LinearAlgebra.eigvals(DF.coefficients)))
 
 # DF!(DF, u, N_fft)
 # DF_approx!(DF_approx, u, N_fft)
