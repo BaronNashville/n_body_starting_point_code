@@ -10,16 +10,18 @@ function DF_approx!(DF_approx::LinearOperator, u::Sequence, N_fft::Int64)
 
     F!(F, u, N_fft)
 
-    for i in -N:N
-        for j = 1:3
+    for i in 1:3
+        for n = -N:N
             new_u[:] = u[:]
-            component(new_u,j)[i] = component(new_u,j)[i] + h
+            display(new_u)
+            component(new_u,i)[n] = component(new_u,i)[n] + h
+            display(new_u)
 
             F!(Fₕ, new_u, N_fft)
 
             approx = 1/h * (Fₕ-F);
 
-            component(DF_approx,:,j)[:,i] = approx[:]
+            component(DF_approx,:,i)[:,n] = approx[:]
         end
     end
 end

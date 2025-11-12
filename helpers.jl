@@ -16,7 +16,6 @@ function G_of_u!(G_of_u::Sequence, u::Sequence, G::Function, N_fft::Int64)
 
     # Evaluate the fourier series at grid points using the IFFT
     grid_points = Sequence(S_pad, [FFTW.fft(FFTW.ifftshift(u_pad.coefficients[begin:end-1])); 0])
-
     # Evaluate the function at the grid points
     eval_points = zeros(ComplexF64, S_pad)
 
@@ -46,12 +45,14 @@ function G_of_u_vec!(G_of_u::Sequence, u::Sequence, G::Function, N_fft::Int64)
     S_pad = Fourier(div(N_fft,2), f)    
 
     u_pad = project(u, S_pad^dim)
+    display(u_pad)
 
     # Evaluate the fourier series at grid points using the IFFT
     grid_points = zeros(ComplexF64, dim, N_fft)
     for i ∈ 1:dim
         grid_points[i,:] = FFTW.fft(FFTW.ifftshift(component(u_pad,i).coefficients[begin:end-1]))
     end
+    display(grid_points)
 
     # Evaluate the function at the grid points
     eval_points = zeros(ComplexF64, dim, N_fft)
@@ -59,6 +60,7 @@ function G_of_u_vec!(G_of_u::Sequence, u::Sequence, G::Function, N_fft::Int64)
     for j ∈ 1:N_fft
         eval_points[:,j] = G(grid_points[:,j])
     end
+    display(eval_points)
 
     # Use the FFT to obtain the coefficients of G(u)
     fourier_coeffs = zeros(ComplexF64, dim, N_fft)
@@ -68,7 +70,8 @@ function G_of_u_vec!(G_of_u::Sequence, u::Sequence, G::Function, N_fft::Int64)
 
     for i ∈ 1:dim
         component(G_of_u,i).coefficients[:] = project(Sequence(S_pad, [fourier_coeffs[i,:];0]), S).coefficients[:]
-    end  
+    end
+    #display(G_of_u)  
 end
 
 function G_of_u_mat!(G_of_u::LinearOperator, u::Sequence, G::Function, N_fft::Int64)
@@ -121,11 +124,13 @@ function Newton(u::Sequence, F::Sequence, DF::LinearOperator, tol::Float64 = 1e-
     F!(F, u, N_fft)
     DF!(DF, u, N_fft)
     while norm(F) > tol && count <= max_iter
+        println("Iteration " * string(count) * ", ||F(u)|| = " * string(norm(F)))
         u = u - DF \ F
         F!(F,u,N_fft)
         DF!(DF, u, N_fft)
         count = count + 1
     end
+    println("Newton end. " * string(count) * " iterations needed. ||F(u)|| = " * string(norm(F)) * ", ||DF\\F|| = " * string(norm(DF \ F)))
     return u
 end
 

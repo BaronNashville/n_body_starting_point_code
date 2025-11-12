@@ -9,7 +9,7 @@ __save__ = false
 __save_location__ = "./figures/"
 
 # Number of fourier coefficients we want
-N::Int64 = 1000
+N::Int64 = 50
 # Computing projection into higher space for FFT
 N_fft::Int64 = nextpow(2, 2*N+1)
 
@@ -22,37 +22,35 @@ N_fft::Int64 = nextpow(2, 2*N+1)
 # Angles of rotation
 # ψ = [rotation about x axis, rotation about y-axis, rotation about z-axis]
 Ψ::Vector{Float64} = [0;0;0]
-e::Float64 = 0.9
+e::Float64 = 0.1
 ϕ::Float64 = 0
 
 sample_points, sample_time = kepler_sample(Ψ, e, ϕ, N_fft)
 
 u = zeros(ComplexF64, ℱ^3)
-component(u,1).coefficients[:] = 1/N_fft * project(Sequence(ℱ_pad, [FFTW.fftshift(FFTW.fft(FFTW.ifftshift(sample_points[1,:]))); 0]), ℱ).coefficients[:]
-component(u,2).coefficients[:] = 1/N_fft * project(Sequence(ℱ_pad, [FFTW.fftshift(FFTW.fft(FFTW.ifftshift(sample_points[2,:]))); 0]), ℱ).coefficients[:]
-component(u,3).coefficients[:] = 1/N_fft * project(Sequence(ℱ_pad, [FFTW.fftshift(FFTW.fft(FFTW.ifftshift(sample_points[3,:]))); 0]), ℱ).coefficients[:]
-
-println("|u₁[N]| = " * string(norm(component(u,1)[N])) * ", |u₁[-N]| = " * string(norm(component(u,1)[-N])))
-println("|u₂[N]| = " * string(norm(component(u,2)[N])) * ", |u₂[-N]| = " * string(norm(component(u,2)[-N])))
-println("|u₃[N]| = " * string(norm(component(u,3)[N])) * ", |u₃[-N]| = " * string(norm(component(u,3)[-N])))
+component(u,1).coefficients[:] = 1/N_fft * project(Sequence(ℱ_pad, [FFTW.fftshift(FFTW.fft(sample_points[1,:])); 0]), ℱ).coefficients[:]
+component(u,2).coefficients[:] = 1/N_fft * project(Sequence(ℱ_pad, [FFTW.fftshift(FFTW.fft(sample_points[2,:])); 0]), ℱ).coefficients[:]
+component(u,3).coefficients[:] = 1/N_fft * project(Sequence(ℱ_pad, [FFTW.fftshift(FFTW.fft(sample_points[3,:])); 0]), ℱ).coefficients[:]
 
 F = zeros(ComplexF64, ℱ^3)
 DF = zeros(ComplexF64, ℱ^3, ℱ^3)
 DF_approx = zeros(ComplexF64, ℱ^3, ℱ^3)
 
 F!(F, u, N_fft)
-println(norm(F))
+DF!(DF, u, N_fft)
+
+println("Size of kernel before Newton = " * string(size(LinearAlgebra.nullspace(DF.coefficients),2)))
 
 DF!(DF, u, N_fft)
-#display(abs.(LinearAlgebra.eigvals(DF.coefficients)))
-
-# DF!(DF, u, N_fft)
-# DF_approx!(DF_approx, u, N_fft)
-
-# println(opnorm(DF-DF_approx))
+DF_approx!(DF_approx, u, N_fft)
+println("Difference between true derivative and finite differences: " * string(opnorm(DF-DF_approx)))
 
 # # Applying Newton's method we solve for a numerical solution
-# u = Newton(u, F, DF)
+u = Newton(u, F, DF)
+
+println("|u₁[N]| = " * string(norm(component(u,1)[N])) * ", |u₁[-N]| = " * string(norm(component(u,1)[-N])))
+println("|u₂[N]| = " * string(norm(component(u,2)[N])) * ", |u₂[-N]| = " * string(norm(component(u,2)[-N])))
+println("|u₃[N]| = " * string(norm(component(u,3)[N])) * ", |u₃[-N]| = " * string(norm(component(u,3)[-N])))
 
 # println(LinearAlgebra.eigvals(DF.coefficients))
 

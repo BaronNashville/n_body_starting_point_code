@@ -14,6 +14,7 @@ function F!(F::Sequence, u::Sequence, N_fft::Int64)
             component(D,i,i)[k,k] = -k^2
         end
     end
+    println(g([1;1;1]))
 
     # Nonlinear part
     G_of_u_vec!(G, u, g, N_fft)

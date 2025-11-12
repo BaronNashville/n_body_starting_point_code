@@ -1,23 +1,27 @@
 include("helpers.jl")
+include("float_functions.jl")
+include("approx_derivatives.jl")
 
-N = 2
+N = 1
 S = Fourier(N, 1.0)
 
-# N_fft = nextpow(2, 2*N+1)
-N_fft = 2^4
+N_fft = nextpow(2, 2*N+1)
 
 S_pad = Fourier(div(N_fft,2), 1.0)
 
-G(u) = u/norm(u)
+G(u) = u/norm(u)^3
 
-# u = zeros(S^3)
-# component(u,1)[:] = [-2;-1;0;1;2]
-# component(u,2)[:] = [-4;-1;2;1;5]
-# component(u,3)[:] = [3;-1;6;1;4]
+# u = Sequence(S^3, rand(3*(2*N+1)))
+u = Sequence(S^3, [1;2;3;4;5;6;7;8;9])
 
-u = Sequence(S, [-2;-1;2;1;2])
+F = zeros(ComplexF64, S^3)
+DF = zeros(ComplexF64, S^3, S^3)
+DF_approx = zeros(ComplexF64, S^3, S^3)
 
-G_of_u = zeros(ComplexF64, S)
-G_of_u!(G_of_u, u, G, N_fft)
+F!(F, u, N_fft)
+#DF!(DF, u, N_fft)
+#DF_approx!(DF_approx, u, N_fft)
+
+
 
 
