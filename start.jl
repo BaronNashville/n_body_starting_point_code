@@ -1,9 +1,7 @@
 # Setup the correct julia environment
 import Pkg
 Pkg.activate("nbody")
-Pkg.instantiate()
+Pkg.resolve()
 
-import FFTW
-using RadiiPolynomial
 # Launch the program
 # include("main.jl")
