@@ -6,12 +6,14 @@ include("float_functions.jl")
 include("approx_derivatives.jl")
 
 __save__ = false
+__plot__ = true
 __save_location__ = "./figures/"
 
 # Number of fourier coefficients we want
 N::Int64 = 50
 # Computing projection into higher space for FFT
-N_fft::Int64 = nextpow(2, 2*N+1)
+# N_fft::Int64 = nextpow(2, 2*N+1)
+N_fft::Int64 = 2^14
 
 # Defining the space we are working in
 ℱ = Fourier(N,1.0)
@@ -21,8 +23,8 @@ N_fft::Int64 = nextpow(2, 2*N+1)
 
 # Angles of rotation
 # ψ = [rotation about x axis, rotation about y-axis, rotation about z-axis]
-Ψ::Vector{Float64} = [0;0;0]
-e::Float64 = 0.1
+Ψ::Vector{Float64} = [pi/2;pi/3;0]
+e::Float64 = 0.5
 ϕ::Float64 = 0
 
 sample_points, sample_time = kepler_sample(Ψ, e, ϕ, N_fft)
@@ -39,23 +41,23 @@ DF_approx = zeros(ComplexF64, ℱ^3, ℱ^3)
 F!(F, u, N_fft)
 DF!(DF, u, N_fft)
 
-println("Size of kernel before Newton = " * string(size(LinearAlgebra.nullspace(DF.coefficients),2)))
+println("Size of kernel before Newton = " * string(size(LinearAlgebra.nullspace(DF.coefficients),2)) * "\n")
 
 DF!(DF, u, N_fft)
 DF_approx!(DF_approx, u, N_fft)
-println("Difference between true derivative and finite differences: " * string(opnorm(DF-DF_approx)))
+println("Difference between true derivative and finite differences: " * string(opnorm(DF-DF_approx)) * "\n")
 
-# # Applying Newton's method we solve for a numerical solution
+# Applying Newton's method we solve for a numerical solution
 u = Newton(u, F, DF)
 
 println("|u₁[N]| = " * string(norm(component(u,1)[N])) * ", |u₁[-N]| = " * string(norm(component(u,1)[-N])))
 println("|u₂[N]| = " * string(norm(component(u,2)[N])) * ", |u₂[-N]| = " * string(norm(component(u,2)[-N])))
 println("|u₃[N]| = " * string(norm(component(u,3)[N])) * ", |u₃[-N]| = " * string(norm(component(u,3)[-N])))
 
-# println(LinearAlgebra.eigvals(DF.coefficients))
+println("Size of kernel after Newton = " * string(size(LinearAlgebra.nullspace(DF.coefficients),2)) * "\n")
 
 # Plotting using GLMakie
-time_data = collect(LinRange(-pi, pi, 1000))
+time_data = collect(LinRange(0, 2*pi, 1000))
 u_data = collection_eval(time_data, u)
 
 sol_plot = Figure(size = (1000, 600))
@@ -92,11 +94,6 @@ GLMakie.scatter!(sol_ax,
     )
 
 axislegend("Legend")
-display(GLMakie.Screen(), sol_plot)
-
-if __save__
-    save(string(__save_location__, "ellipse_sol" * string(e) * ".png"), sol_plot, px_per_unit = 8)
-end
 
 coordinates_plot = Figure(size = (1600, 600))
 x_ax = Axis(coordinates_plot[1,1], title = L"\text{$x$-coordinate of approximate solution}", 
@@ -105,7 +102,7 @@ x_ax = Axis(coordinates_plot[1,1], title = L"\text{$x$-coordinate of approximate
     xlabelsize = 20,
     ylabel = L"$x$",
     ylabelsize = 20,
-    limits = ((-pi, pi), (-2, 2)) 
+    limits = ((0, 2*pi), (-2, 2)) 
     )
 
 GLMakie.lines!(x_ax,
@@ -134,7 +131,7 @@ y_ax = Axis(coordinates_plot[1,2], title = L"\text{$y$-coordinate of approximate
     xlabelsize = 20,
     ylabel = L"$y$",
     ylabelsize = 20,
-    limits = ((-pi, pi), (-2, 2)) 
+    limits = ((0, 2*pi), (-2, 2)) 
     )
 
 GLMakie.lines!(y_ax,
@@ -163,7 +160,7 @@ z_ax = Axis(coordinates_plot[1,3], title = L"\text{$z$-coordinate of approximate
     xlabelsize = 20,
     ylabel = L"$z$",
     ylabelsize = 20,
-    limits = ((-pi, pi), (-2, 2)) 
+    limits = ((0, 2*pi), (-2, 2)) 
     )
 
 GLMakie.lines!(z_ax,
@@ -186,8 +183,12 @@ GLMakie.scatter!(z_ax,
 
 axislegend("Legend")
 
-display(GLMakie.Screen(), coordinates_plot)
+if __plot__
+    display(GLMakie.Screen(), sol_plot)
+    display(GLMakie.Screen(), coordinates_plot)
+end
 
 if __save__
+    save(string(__save_location__, "ellipse_sol" * string(e) * ".png"), sol_plot, px_per_unit = 8)
     save(string(__save_location__, "coordinates_sol" * string(e) * ".png"), coordinates_plot, px_per_unit = 8)
 end

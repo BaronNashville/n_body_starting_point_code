@@ -23,13 +23,11 @@ function G_of_u!(G_of_u::Sequence, u::Sequence, G::Function, N_fft::Int64)
         eval_points[n] = G(grid_points[n])
     end
 
-    println(eval_points.coefficients[begin:end-1])
-
     # Use the FFT to obtain the coefficients of G(u)
     G_of_u.coefficients[:] = project(Sequence(S_pad, [FFTW.fftshift(FFTW.ifft(eval_points.coefficients[begin:end-1]));0]), S).coefficients[:]
 end
 
-function G_of_u_vec!(G_of_u::Sequence, u::Sequence, G::Function, N_fft::Int64)
+function G_of_u_vec2vec!(G_of_u::Sequence, u::Sequence, G::Function, N_fft::Int64)
     # INPUTS:
     # 1) u  = {u_n}_{n=-N}^{N} sequence of fourier coefficients
     # 2) g : Rⁿ → Rⁿ analytic function
@@ -45,14 +43,12 @@ function G_of_u_vec!(G_of_u::Sequence, u::Sequence, G::Function, N_fft::Int64)
     S_pad = Fourier(div(N_fft,2), f)    
 
     u_pad = project(u, S_pad^dim)
-    display(u_pad)
 
     # Evaluate the fourier series at grid points using the IFFT
     grid_points = zeros(ComplexF64, dim, N_fft)
     for i ∈ 1:dim
         grid_points[i,:] = FFTW.fft(FFTW.ifftshift(component(u_pad,i).coefficients[begin:end-1]))
     end
-    display(grid_points)
 
     # Evaluate the function at the grid points
     eval_points = zeros(ComplexF64, dim, N_fft)
@@ -60,7 +56,6 @@ function G_of_u_vec!(G_of_u::Sequence, u::Sequence, G::Function, N_fft::Int64)
     for j ∈ 1:N_fft
         eval_points[:,j] = G(grid_points[:,j])
     end
-    display(eval_points)
 
     # Use the FFT to obtain the coefficients of G(u)
     fourier_coeffs = zeros(ComplexF64, dim, N_fft)
@@ -70,11 +65,46 @@ function G_of_u_vec!(G_of_u::Sequence, u::Sequence, G::Function, N_fft::Int64)
 
     for i ∈ 1:dim
         component(G_of_u,i).coefficients[:] = project(Sequence(S_pad, [fourier_coeffs[i,:];0]), S).coefficients[:]
-    end
-    #display(G_of_u)  
+    end  
 end
 
-function G_of_u_mat!(G_of_u::LinearOperator, u::Sequence, G::Function, N_fft::Int64)
+function G_of_u_vec2pt!(G_of_u::Sequence, u::Sequence, G::Function, N_fft::Int64)
+    # INPUTS:
+    # 1) u  = {u_n}_{n=-N}^{N} sequence of fourier coefficients
+    # 2) g : Rⁿ → R analytic function
+
+    # Set ouput to 0
+    G_of_u .= 0
+
+    # Extract parameters from inputs
+    S = space(component(u,1))
+    f = frequency(S)
+    dim = div(dimension(space(u)), dimension(S))
+
+    S_pad = Fourier(div(N_fft,2), f)    
+
+    u_pad = project(u, S_pad^dim)
+
+    # Evaluate the fourier series at grid points using the IFFT
+    grid_points = zeros(ComplexF64, dim, N_fft)
+    for i ∈ 1:dim
+        grid_points[i,:] = FFTW.fft(FFTW.ifftshift(component(u_pad,i).coefficients[begin:end-1]))
+    end
+
+    # Evaluate the function at the grid points
+    eval_points = zeros(ComplexF64, 1, N_fft)
+
+    for j ∈ 1:N_fft
+        eval_points[j] = G(grid_points[:,j])
+    end
+
+    # Use the FFT to obtain the coefficients of G(u)
+    fourier_coeffs = FFTW.fftshift(FFTW.ifft(eval_points))
+
+    G_of_u.coefficients[:] = project(Sequence(S_pad, [fourier_coeffs;0]), S).coefficients[:]
+end
+
+function G_of_u_vec2mat!(G_of_u::LinearOperator, u::Sequence, G::Function, N_fft::Int64)
     # INPUTS:
     # 1) u  = {u_n}_{n=-N}^{N} sequence of fourier coefficients
     # 2) G : Rⁿ → Rⁿ x Rⁿ  analytic function
@@ -124,13 +154,13 @@ function Newton(u::Sequence, F::Sequence, DF::LinearOperator, tol::Float64 = 1e-
     F!(F, u, N_fft)
     DF!(DF, u, N_fft)
     while norm(F) > tol && count <= max_iter
-        println("Iteration " * string(count) * ", ||F(u)|| = " * string(norm(F)))
+        println("Iteration " * string(count) * ", ||F(u)|| = " * string(norm(F)) * ", ||DF\\F|| = " * string(norm(DF \ F)))
         u = u - DF \ F
         F!(F,u,N_fft)
         DF!(DF, u, N_fft)
         count = count + 1
     end
-    println("Newton end. " * string(count) * " iterations needed. ||F(u)|| = " * string(norm(F)) * ", ||DF\\F|| = " * string(norm(DF \ F)))
+    println("Iteration " * string(count) * ", ||F(u)|| = " * string(norm(F)) * ", ||DF\\F|| = " * string(norm(DF \ F)) * "\nNewton ended after " * string(count) * " iterations needed. \n")
     return u
 end
 
@@ -154,8 +184,8 @@ function kepler_sample(ψ::Vector{Float64},e::Float64, ϕ::Float64, N_fft::Int64
 
     # Solving ODE for θ, r, x, y, z
     f_ode(θ,p,t) = c^(-3) * (1+e*cos(θ))^2
-    prob = DifferentialEquations.ODEProblem(f_ode, ϕ, (-pi, pi))
-    sol = DifferentialEquations.solve(prob, DifferentialEquations.Tsit5(), reltol = 1e-14, saveat = LinRange(-pi,pi,N_fft+1))
+    prob = DifferentialEquations.ODEProblem(f_ode, ϕ, (0, 2*pi))
+    sol = DifferentialEquations.solve(prob, DifferentialEquations.Tsit5(), reltol = 1e-14, saveat = LinRange(0,2*pi,N_fft+1))
     θ_grid = sol.u[begin:end-1]
     point_grid = zeros(3, N_fft)
     for i ∈ 1:N_fft
@@ -186,4 +216,33 @@ function kepler_sample(ψ::Vector{Float64},e::Float64, ϕ::Float64, N_fft::Int64
     rot = exp(Ψ[1]*J₁ + Ψ[2]*J₂ + Ψ[3]*J₃)
 
     return rot * point_grid, sol.t[begin:end-1]
+end
+
+function generators()
+    A = [
+        1 0 0
+        0 -1 0
+        0 0 -1
+    ]
+
+    B = [
+        0 1 0
+        0 0 1
+        1 0 0
+    ]
+
+    generators = zeros(3,3, 11)
+    generators[:,:,1] = A
+    generators[:,:,2] = B
+    generators[:,:,3] = B^2
+    generators[:,:,4] = A*B
+    generators[:,:,5] = A*B^2
+    generators[:,:,6] = B*A
+    generators[:,:,7] = B^2*A
+    generators[:,:,8] = A*B*A
+    generators[:,:,9] = A*B^2*A
+    generators[:,:,10] = B*A*B
+    generators[:,:,11] = B^2*A*B
+
+    return generators, 11
 end
