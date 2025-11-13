@@ -22,7 +22,5 @@ include("approx_derivatives.jl")
 # DF_approx!(DF_approx, u, N_fft)
 # println(opnorm(DF-DF_approx))
 
-A_1([pi/2;pi/3;0.0], 0.5, 16)
-
 
 

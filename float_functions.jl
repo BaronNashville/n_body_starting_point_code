@@ -1,7 +1,8 @@
-function F!(F::Sequence, u::Sequence, N_fft::Int64)
+function F!(F::Sequence, u::Sequence, ε::Float64, N_fft::Int64)
     # Extract important space data
     S = space(component(u,1))
-    G = zeros(ComplexF64, S^3)    
+    G = zeros(ComplexF64, S^3)
+    H = zeros(ComplexF64, S^3)    
     N = order(S)
 
     # Initializing the output to be 0
@@ -18,13 +19,17 @@ function F!(F::Sequence, u::Sequence, N_fft::Int64)
     # Nonlinear part
     G_of_u_vec2vec!(G, u, g, N_fft)
 
-    F[:] = (D*u + G)[:] 
+    # Pertubation part
+    G_of_u_vec2vec!(H, u, h, N_fft)
+
+    F[:] = (D*u + G + ε*H)[:] 
 end
 
-function DF!(DF::LinearOperator, u::Sequence, N_fft::Int64)
+function DF!(DF::LinearOperator, u::Sequence, ε::Float64, N_fft::Int64)
     # Extract important space data
     S = space(component(u,1))
-    DG = zeros(ComplexF64, S^3,S^3)    
+    DG = zeros(ComplexF64, S^3, S^3)
+    DH = zeros(ComplexF64, S^3, S^3)    
     N = order(S)
 
     # Initializing the output to be 0
@@ -41,16 +46,19 @@ function DF!(DF::LinearOperator, u::Sequence, N_fft::Int64)
     # Nonlinear part
     G_of_u_vec2mat!(DG, u, Dg, N_fft)
 
-    DF.coefficients[:] = (D + DG).coefficients[:]  
+    # Pertubation part
+    G_of_u_vec2mat!(DH, u, Dh, N_fft)
+
+    DF.coefficients[:] = (D + DG + ε*DH).coefficients[:]  
 end
 
 function g(u)
-    return u/((u[1]^2 + u[2]^2 + u[3]^2)^(3/2))
+    return u/(u[1]^2 + u[2]^2 + u[3]^2)^(3/2)
 end
 
 function Dg(u)
     n = (u[1]^2 + u[2]^2 + u[3]^2)^(1/2)
-    return 1/(n^3) * I -3*u*transpose(u)/(n^5)
+    return 1/n^3 * I -3*u*transpose(u)/n^5
 end
 
 function h(u)
@@ -60,7 +68,21 @@ function h(u)
     for i ∈ 1:num_gen
         A = I - gens[:,:,i]
         Au = A*u
-        sum = sum + (Au)/((Au[1]^2 + Au[2]^2 + Au[3]^2)^(3/2))
+        sum = sum + Au/(Au[1]^2 + Au[2]^2 + Au[3]^2)^(3/2)
+    end
+
+    return sum
+end
+
+function Dh(u)
+    gens, num_gen = generators()
+    sum = zeros(3,3)    
+
+    for i ∈ 1:num_gen
+        A = I - gens[:,:,i]
+        Au = A*u
+        n = (Au[1]^2 + Au[2]^2 + Au[3]^2)^(1/2)
+        sum = sum + A/n^3  - 3*Au*transpose(Au)*A/n^5
     end
 
     return sum

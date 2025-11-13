@@ -4,4 +4,4 @@ Pkg.activate("nbody")
 Pkg.resolve()
 
 # Launch the program
-# include("main.jl")
+include("main.jl")

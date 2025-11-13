@@ -149,18 +149,33 @@ function G_of_u_vec2mat!(G_of_u::LinearOperator, u::Sequence, G::Function, N_fft
     end     
 end
 
-function Newton(u::Sequence, F::Sequence, DF::LinearOperator, tol::Float64 = 1e-12, max_iter::Int64 = 50)
+function Newton(u::Sequence, ε::Float64, F::Sequence, DF::LinearOperator, tol::Float64 = 1e-12, max_iter::Int64 = 50)
     count = 0;
-    F!(F, u, N_fft)
-    DF!(DF, u, N_fft)
+    F!(F, u, ε, N_fft)
+    DF!(DF, u, ε, N_fft)
+    println("Beginning Newton")
     while norm(F) > tol && count <= max_iter
         println("Iteration " * string(count) * ", ||F(u)|| = " * string(norm(F)) * ", ||DF\\F|| = " * string(norm(DF \ F)))
         u = u - DF \ F
-        F!(F,u,N_fft)
-        DF!(DF, u, N_fft)
+        F!(F,u, ε, N_fft)
+        DF!(DF, u, ε, N_fft)
         count = count + 1
     end
-    println("Iteration " * string(count) * ", ||F(u)|| = " * string(norm(F)) * ", ||DF\\F|| = " * string(norm(DF \ F)) * "\nNewton ended after " * string(count) * " iterations needed. \n")
+    println("Iteration " * string(count) * ", ||F(u)|| = " * string(norm(F)) * ", ||DF\\F|| = " * string(norm(DF \ F)) * "\nNewton ended after " * string(count) * " iterations. \n")
+    return u
+end
+
+function GradientDescentA(ψ::vector{Float64}, e::Float64, N_fft::Int64, step_size::Float64 = 1e-6, tol::Float64 = 1e-12, max_iter::Int64 = 50)
+    count = 0;
+    println("Beginning gradient descent")
+    while opnorm(DA_1_approx(ψ, e, N_fft)) > tol && count <= max_iter
+        println("Iteration " * string(count) * ", ||A₁(ψ, e)|| = " * string(norm(A_1(ψ, e, N_fft))) * ", ||DA₁|| = " * string(opnorm(DA_1_approx(ψ, e, N_fft))))
+        DF = DA_1_approx(ψ, e, N_fft)
+        ψ = ψ - step_size * DF[1:3]
+        e = e - step_size * DF[4]
+        count = count + 1
+    end
+    println("Iteration " * string(count) * ", ||A₁(ψ, e)|| = " * string(norm(A_1(ψ, e, N_fft))) * ", ||DA₁|| = " * string(opnorm(DA_1_approx(ψ, e, N_fft))) * "\nGradient descent ended after " * string(count) * " iterations. \n")
     return u
 end
 

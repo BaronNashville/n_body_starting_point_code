@@ -6,11 +6,13 @@ include("float_functions.jl")
 include("approx_derivatives.jl")
 
 __save__ = false
-__plot__ = true
+__plot__ = false
 __save_location__ = "./figures/"
 
 # Number of fourier coefficients we want
 N::Int64 = 50
+# Size of pertubation
+ε::Float64 = 0
 # Computing projection into higher space for FFT
 # N_fft::Int64 = nextpow(2, 2*N+1)
 N_fft::Int64 = 2^14
@@ -24,7 +26,7 @@ N_fft::Int64 = 2^14
 # Angles of rotation
 # ψ = [rotation about x axis, rotation about y-axis, rotation about z-axis]
 Ψ::Vector{Float64} = [pi/2;pi/3;0]
-e::Float64 = 0.5
+e::Float64 = 0
 ϕ::Float64 = 0
 
 sample_points, sample_time = kepler_sample(Ψ, e, ϕ, N_fft)
@@ -38,17 +40,17 @@ F = zeros(ComplexF64, ℱ^3)
 DF = zeros(ComplexF64, ℱ^3, ℱ^3)
 DF_approx = zeros(ComplexF64, ℱ^3, ℱ^3)
 
-F!(F, u, N_fft)
-DF!(DF, u, N_fft)
+println("Evaluating function and its derivative")
+
+F!(F, u, ε, N_fft)
+DF!(DF, u, ε, N_fft)
+DF_approx!(DF_approx, u, ε, N_fft)
 
 println("Size of kernel before Newton = " * string(size(LinearAlgebra.nullspace(DF.coefficients),2)) * "\n")
-
-DF!(DF, u, N_fft)
-DF_approx!(DF_approx, u, N_fft)
 println("Difference between true derivative and finite differences: " * string(opnorm(DF-DF_approx)) * "\n")
 
 # Applying Newton's method we solve for a numerical solution
-u = Newton(u, F, DF)
+u = Newton(u, ε, F, DF)
 
 println("|u₁[N]| = " * string(norm(component(u,1)[N])) * ", |u₁[-N]| = " * string(norm(component(u,1)[-N])))
 println("|u₂[N]| = " * string(norm(component(u,2)[N])) * ", |u₂[-N]| = " * string(norm(component(u,2)[-N])))
