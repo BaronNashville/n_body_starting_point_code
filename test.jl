@@ -22,5 +22,8 @@ include("approx_derivatives.jl")
 # DF_approx!(DF_approx, u, N_fft)
 # println(opnorm(DF-DF_approx))
 
+ψ::Vector{Float64} = rand(3)
+e::Float64 = rand()
 
+GradientDescentA(ψ, e, 2^10)
 

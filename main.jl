@@ -1,12 +1,12 @@
 import FFTW, LinearAlgebra, Integrals, DifferentialEquations
-using RadiiPolynomial, GLMakie
+using RadiiPolynomial, GLMakie, TickTock
 
 include("helpers.jl")
 include("float_functions.jl")
 include("approx_derivatives.jl")
 
 __save__ = false
-__plot__ = false
+__plot__ = true
 __save_location__ = "./figures/"
 
 # Number of fourier coefficients we want
@@ -25,11 +25,11 @@ N_fft::Int64 = 2^14
 
 # Angles of rotation
 # ψ = [rotation about x axis, rotation about y-axis, rotation about z-axis]
-Ψ::Vector{Float64} = [pi/2;pi/3;0]
-e::Float64 = 0
+ψ::Vector{Float64} = [1;2;3]
+e::Float64 = 1/2
 ϕ::Float64 = 0
 
-sample_points, sample_time = kepler_sample(Ψ, e, ϕ, N_fft)
+sample_points, sample_time = kepler_sample(ψ, e, ϕ, N_fft)
 
 u = zeros(ComplexF64, ℱ^3)
 component(u,1).coefficients[:] = 1/N_fft * project(Sequence(ℱ_pad, [FFTW.fftshift(FFTW.fft(sample_points[1,:])); 0]), ℱ).coefficients[:]
@@ -42,15 +42,23 @@ DF_approx = zeros(ComplexF64, ℱ^3, ℱ^3)
 
 println("Evaluating function and its derivative")
 
+# tick()
 F!(F, u, ε, N_fft)
+# tock()
+
+# tick()
 DF!(DF, u, ε, N_fft)
-DF_approx!(DF_approx, u, ε, N_fft)
+# tock()
+
+# tick()
+# DF_approx!(DF_approx, u, ε, N_fft)
+# tock()
 
 println("Size of kernel before Newton = " * string(size(LinearAlgebra.nullspace(DF.coefficients),2)) * "\n")
-println("Difference between true derivative and finite differences: " * string(opnorm(DF-DF_approx)) * "\n")
+# println("Difference between true derivative and finite differences: " * string(opnorm(DF-DF_approx)) * "\n")
 
 # Applying Newton's method we solve for a numerical solution
-u = Newton(u, ε, F, DF)
+Newton!(u, ε, F, DF)
 
 println("|u₁[N]| = " * string(norm(component(u,1)[N])) * ", |u₁[-N]| = " * string(norm(component(u,1)[-N])))
 println("|u₂[N]| = " * string(norm(component(u,2)[N])) * ", |u₂[-N]| = " * string(norm(component(u,2)[-N])))

@@ -149,34 +149,36 @@ function G_of_u_vec2mat!(G_of_u::LinearOperator, u::Sequence, G::Function, N_fft
     end     
 end
 
-function Newton(u::Sequence, ε::Float64, F::Sequence, DF::LinearOperator, tol::Float64 = 1e-12, max_iter::Int64 = 50)
+function Newton!(u::Sequence, ε::Float64, F::Sequence, DF::LinearOperator, tol::Float64 = 1e-12, max_iter::Int64 = 50)
     count = 0;
     F!(F, u, ε, N_fft)
     DF!(DF, u, ε, N_fft)
     println("Beginning Newton")
     while norm(F) > tol && count <= max_iter
         println("Iteration " * string(count) * ", ||F(u)|| = " * string(norm(F)) * ", ||DF\\F|| = " * string(norm(DF \ F)))
-        u = u - DF \ F
-        F!(F,u, ε, N_fft)
+        u.coefficients[:] = (u - DF \ F).coefficients[:]
+        F!(F, u, ε, N_fft)
         DF!(DF, u, ε, N_fft)
         count = count + 1
     end
     println("Iteration " * string(count) * ", ||F(u)|| = " * string(norm(F)) * ", ||DF\\F|| = " * string(norm(DF \ F)) * "\nNewton ended after " * string(count) * " iterations. \n")
-    return u
 end
 
-function GradientDescentA(ψ::vector{Float64}, e::Float64, N_fft::Int64, step_size::Float64 = 1e-6, tol::Float64 = 1e-12, max_iter::Int64 = 50)
+function GradientDescentA(ψ::Vector{Float64}, e::Float64, N_fft::Int64, max_step_size::Float64 = 1e-3, tol::Float64 = 1e-12, max_iter::Int64 = 1000)
     count = 0;
+    DF = DA_1_approx(ψ, e, N_fft)
+    step_size = min(max_step_size, opnorm(DF))
     println("Beginning gradient descent")
-    while opnorm(DA_1_approx(ψ, e, N_fft)) > tol && count <= max_iter
-        println("Iteration " * string(count) * ", ||A₁(ψ, e)|| = " * string(norm(A_1(ψ, e, N_fft))) * ", ||DA₁|| = " * string(opnorm(DA_1_approx(ψ, e, N_fft))))
-        DF = DA_1_approx(ψ, e, N_fft)
+    while opnorm(DF) > tol && count <= max_iter
+        println("Iteration " * string(count) * ", ||A₁(ψ, e)|| = " * string(norm(A_1(ψ, e, N_fft))) * ", ||DA₁|| = " * string(opnorm(DF)))
         ψ = ψ - step_size * DF[1:3]
         e = e - step_size * DF[4]
         count = count + 1
+        DF = DA_1_approx(ψ, e, N_fft)
+        step_size = min(max_step_size, opnorm(DF)*1e-2)
     end
     println("Iteration " * string(count) * ", ||A₁(ψ, e)|| = " * string(norm(A_1(ψ, e, N_fft))) * ", ||DA₁|| = " * string(opnorm(DA_1_approx(ψ, e, N_fft))) * "\nGradient descent ended after " * string(count) * " iterations. \n")
-    return u
+    return ψ, e
 end
 
 function collection_eval(time_data::Vector{Float64}, u::Sequence)
@@ -200,7 +202,7 @@ function kepler_sample(ψ::Vector{Float64},e::Float64, ϕ::Float64, N_fft::Int64
     # Solving ODE for θ, r, x, y, z
     f_ode(θ,p,t) = c^(-3) * (1+e*cos(θ))^2
     prob = DifferentialEquations.ODEProblem(f_ode, ϕ, (0, 2*pi))
-    sol = DifferentialEquations.solve(prob, DifferentialEquations.Tsit5(), reltol = 1e-14, saveat = LinRange(0,2*pi,N_fft+1))
+    sol = DifferentialEquations.solve(prob, DifferentialEquations.Tsit5(), reltol = 1e-14, abstol = 1e-14 ,saveat = LinRange(0,2*pi,N_fft+1))
     θ_grid = sol.u[begin:end-1]
     point_grid = zeros(3, N_fft)
     for i ∈ 1:N_fft
@@ -228,7 +230,8 @@ function kepler_sample(ψ::Vector{Float64},e::Float64, ϕ::Float64, N_fft::Int64
         0 0 0
     ]
 
-    rot = exp(Ψ[1]*J₁ + Ψ[2]*J₂ + Ψ[3]*J₃)
+    rot = exp(ψ[3]*J₃) * exp(ψ[2]*J₂) * exp(ψ[1]*J₁)
+    
 
     return rot * point_grid, sol.t[begin:end-1]
 end

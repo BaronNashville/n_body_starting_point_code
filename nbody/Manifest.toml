@@ -2,7 +2,7 @@
 
 julia_version = "1.12.1"
 manifest_format = "2.0"
-project_hash = "5dffbae30a74a53f1d273b2d8ba735581b56c15b"
+project_hash = "0e79b0b5cfc242fd68032f691ed58c89e690a0bd"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "27cecae79e5cc9935255f90c53bb831cc3c870d7"
@@ -2751,6 +2751,12 @@ deps = ["ManualMemory"]
 git-tree-sha1 = "d969183d3d244b6c33796b5ed01ab97328f2db85"
 uuid = "8290d209-cae3-49c0-8002-c8c24d57dab5"
 version = "0.5.5"
+
+[[deps.TickTock]]
+deps = ["Dates"]
+git-tree-sha1 = "385ff4318d1159050cb129f908804ff95b830de0"
+uuid = "9ff05d80-102d-5586-aa04-3a8bd1a90d20"
+version = "1.3.0"
 
 [[deps.TiffImages]]
 deps = ["ColorTypes", "DataStructures", "DocStringExtensions", "FileIO", "FixedPointNumbers", "IndirectArrays", "Inflate", "Mmap", "OffsetArrays", "PkgVersion", "PrecompileTools", "ProgressMeter", "SIMD", "UUIDs"]
