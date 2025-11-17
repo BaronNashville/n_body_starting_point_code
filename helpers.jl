@@ -149,7 +149,7 @@ function G_of_u_vec2mat!(G_of_u::LinearOperator, u::Sequence, G::Function, N_fft
     end     
 end
 
-function Newton!(u::Sequence, ε::Float64, F::Sequence, DF::LinearOperator, tol::Float64 = 1e-12, max_iter::Int64 = 50)
+function Newton!(u::Sequence, ε::Float64, F::Sequence, DF::LinearOperator; tol::Float64 = 1e-12, max_iter::Int64 = 50)
     count = 0;
     F!(F, u, ε, N_fft)
     DF!(DF, u, ε, N_fft)

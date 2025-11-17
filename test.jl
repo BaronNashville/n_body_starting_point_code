@@ -6,7 +6,7 @@ include("approx_derivatives.jl")
 # S = Fourier(N, 1.0)
 
 # # N_fft = nextpow(2, 2*N+1)
-# N_fft = 2^14
+N_fft = 2^14
 
 # S_pad = Fourier(div(N_fft,2), 1.0)
 
@@ -25,5 +25,6 @@ include("approx_derivatives.jl")
 ψ::Vector{Float64} = rand(3)
 e::Float64 = rand()
 
-GradientDescentA(ψ, e, 2^10)
+
+
 

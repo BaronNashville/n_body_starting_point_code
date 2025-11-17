@@ -6,7 +6,7 @@ include("float_functions.jl")
 include("approx_derivatives.jl")
 
 __save__ = false
-__plot__ = true
+__plot__ = false
 __save_location__ = "./figures/"
 
 # Number of fourier coefficients we want
@@ -26,7 +26,7 @@ N_fft::Int64 = 2^14
 # Angles of rotation
 # ψ = [rotation about x axis, rotation about y-axis, rotation about z-axis]
 ψ::Vector{Float64} = [1;2;3]
-e::Float64 = 1/2
+e::Float64 = 0.1
 ϕ::Float64 = 0
 
 sample_points, sample_time = kepler_sample(ψ, e, ϕ, N_fft)
@@ -58,7 +58,8 @@ println("Size of kernel before Newton = " * string(size(LinearAlgebra.nullspace(
 # println("Difference between true derivative and finite differences: " * string(opnorm(DF-DF_approx)) * "\n")
 
 # Applying Newton's method we solve for a numerical solution
-Newton!(u, ε, F, DF)
+#u, success = newton!((F, DF, u) -> (F!(F, u, ε, N_fft), DF!(DF, u, ε, N_fft)), u, tol = 1e-15)
+Newton!(u, ε, F, DF, tol = 1e-13)
 
 println("|u₁[N]| = " * string(norm(component(u,1)[N])) * ", |u₁[-N]| = " * string(norm(component(u,1)[-N])))
 println("|u₂[N]| = " * string(norm(component(u,2)[N])) * ", |u₂[-N]| = " * string(norm(component(u,2)[-N])))
