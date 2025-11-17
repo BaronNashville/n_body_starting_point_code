@@ -235,7 +235,7 @@ function DA_1(ψ, e, N_fft)
     
     # Computing derivatives with respect to e 
 
-    c_de = c^4/3*pi * 2*pi/N_fft * FFTW.fft(cos.(θ) ./ ((1 .+ e*cos.(θ)).^3))[1]
+    c_de = c^4/(3*pi) * 2*pi/N_fft * FFTW.fft(cos.(θ) ./ ((1 .+ e*cos.(θ)).^3))[1]
     de_f = c_de ./ (1 .+ e*cos.(θ)) - c * 1 ./((1 .+ e*cos.(θ)).^2)
     derivative[4] = 2*pi*c /N_fft * FFTW.fft(f_A(u, θ) .* de_f)[1]
 
