@@ -96,36 +96,6 @@ function Dh(u)
     return sum
 end
 
-# function A_1(ψ, e, N_fft)
-#     sample_points, sample_time = kepler_sample(ψ, e, 0.0, N_fft)
-
-#     function f_A(u)
-#         gens, num_gen = generators()
-#         sum = 0    
-
-#         for i ∈ 1:num_gen
-#             A = I - gens[:,:,i]
-#             Au = A*u
-
-#             # if norm(Au) < 1e-6
-#             #     println("Particles are too close\nProblem occured using u =" * string(u) * "and generator g =" * string(gens[:,:,i]))
-#             # end
-#             sum = sum + 1/((Au[1]^2 + Au[2]^2 + Au[3]^2)^(1/2))
-#             # println(sum)
-#         end
-
-#         return sum
-#     end
-#     f_points = zeros(1, N_fft)
-#     for i ∈ 1:N_fft
-#         f_points[i] = f_A(sample_points[:,i])
-#     end
-
-#     # display(f_points)
-
-#     return 2*pi/N_fft * FFTW.fft(f_points)[1]
-# end
-
 function f_A(u, θ)
     gens, num_gen = generators()
     sum = zeros(length(θ),1)
@@ -149,13 +119,17 @@ function f_DA(u, du, θ)
         Au = A*u
         Adu = A*du
 
-        tmp = tmp - 1 ./((Au[1,:].^2 + Au[2,:].^2 + Au[3,:].^2).^(3/2)) .* sum(Au .* Adu, 1)
+        tmp = tmp - 1 ./((Au[1,:].^2 + Au[2,:].^2 + Au[3,:].^2).^(3/2))[:] .* sum(Au .* Adu, dims = 1)[:]
     end
 
     return tmp
 end
 
-function A_1(ψ, e, N_fft)
+function A_1(X, N_fft)
+    # Extracting input
+    ψ = X[1:3]
+    e = X[4]
+
     # Compting constant c
     θ = collect(LinRange(0, 2*pi, N_fft+1))[1:end-1]
     f_θ = (1 .+e*cos.(θ)).^-2
@@ -189,12 +163,15 @@ function A_1(ψ, e, N_fft)
     return c*2*pi/N_fft * FFTW.fft(f_θ)[1]
 end
 
-function DA_1(ψ, e, N_fft)
-    derivative = zeros(1,3)
-    θ = collect(LinSpace(0, 2*pi, N_fft+1))[1:end-1]
+function DA_1(X, N_fft)
+    # Extracting input
+    ψ = X[1:3]
+    e = X[4]
+
+    derivative = zeros(4,1)
+    θ = collect(LinRange(0, 2*pi, N_fft+1))[1:end-1]
 
     # Compting constant c
-    θ = collect(LinRange(0, 2*pi, N_fft+1))[1:end-1]
     f_θ = (1 .+e*cos.(θ)).^-2
     c = (N_fft/ FFTW.fft(f_θ)[1])^(1/3)
 
@@ -217,7 +194,8 @@ function DA_1(ψ, e, N_fft)
         0 0 0
     ]
 
-    u_base = [transpose(cos.(θ)), transpose(sin.(θ)), zeros(1, length(θ))]
+    u_base = [transpose(cos.(θ)); transpose(sin.(θ)); zeros(1, length(θ))]
+
     u = (exp(ψ[3]*J₃) * exp(ψ[2]*J₂) * exp(ψ[1]*J₁)) * u_base
 
     du_1 = (exp(ψ[3]*J₃) * exp(ψ[2]*J₂) * J₁ * exp(ψ[1]*J₁)) * u_base
@@ -236,8 +214,41 @@ function DA_1(ψ, e, N_fft)
     # Computing derivatives with respect to e 
 
     c_de = c^4/(3*pi) * 2*pi/N_fft * FFTW.fft(cos.(θ) ./ ((1 .+ e*cos.(θ)).^3))[1]
-    de_f = c_de ./ (1 .+ e*cos.(θ)) - c * 1 ./((1 .+ e*cos.(θ)).^2)
-    derivative[4] = 2*pi*c /N_fft * FFTW.fft(f_A(u, θ) .* de_f)[1]
+    de_f = c_de ./ (1 .+ e*cos.(θ)) - c * cos.(θ) ./((1 .+ e*cos.(θ)).^2)
+    derivative[4] = 2*pi /N_fft * FFTW.fft(f_A(u, θ) .* de_f)[1]
 
     return derivative
 end
+
+
+
+
+#function A_1_t(ψ, e, N_fft)
+#     sample_points, sample_time = kepler_sample(ψ, e, 0.0, N_fft)
+
+#     function f_A(u)
+#         gens, num_gen = generators()
+#         sum = 0    
+
+#         for i ∈ 1:num_gen
+#             A = I - gens[:,:,i]
+#             Au = A*u
+
+#             # if norm(Au) < 1e-6
+#             #     println("Particles are too close\nProblem occured using u =" * string(u) * "and generator g =" * string(gens[:,:,i]))
+#             # end
+#             sum = sum + 1/((Au[1]^2 + Au[2]^2 + Au[3]^2)^(1/2))
+#             # println(sum)
+#         end
+
+#         return sum
+#     end
+#     f_points = zeros(1, N_fft)
+#     for i ∈ 1:N_fft
+#         f_points[i] = f_A(sample_points[:,i])
+#     end
+
+#     # display(f_points)
+
+#     return 2*pi/N_fft * FFTW.fft(f_points)[1]
+# end

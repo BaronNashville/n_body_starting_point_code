@@ -51,15 +51,28 @@ function Dh_approx(u)
     return approx
 end
 
-function DA_1_approx(ψ, e, N_fft)
+function DA_1_approx(X, N_fft)
     h = 1e-6;
 
-    approx = zeros(1,4)
+    approx = zeros(4,1)
 
-    approx[1] = 1/2h * (A_1(ψ + h*[1;0;0], e, N_fft) - A_1(ψ - h*[1;0;0], e, N_fft))
-    approx[2] = 1/2h * (A_1(ψ + h*[0;1;0], e, N_fft) - A_1(ψ - h*[0;1;0], e, N_fft))
-    approx[3] = 1/2h * (A_1(ψ + h*[0;0;1], e, N_fft) - A_1(ψ - h*[0;0;1], e, N_fft))
-    approx[4] = 1/2h * (A_1(ψ, e + h, N_fft) - A_1(ψ, e - h, N_fft))
+    approx[1] = 1/2h * (A_1(X + h*[1;0;0;0], N_fft) - A_1(X - h*[1;0;0;0], N_fft))
+    approx[2] = 1/2h * (A_1(X + h*[0;1;0;0], N_fft) - A_1(X - h*[0;1;0;0], N_fft))
+    approx[3] = 1/2h * (A_1(X + h*[0;0;1;0], N_fft) - A_1(X - h*[0;0;1;0], N_fft))
+    approx[4] = 1/2h * (A_1(X + h*[0;0;0;1], N_fft) - A_1(X - h*[0;0;0;1], N_fft))
+
+    return approx
+end
+
+function HA_1_approx(X, N_fft)
+    h = 1e-6;
+
+    approx = zeros(4,4)
+
+    approx[:,1] = 1/2h * (DA_1(X + h*[1;0;0;0], N_fft) - DA_1(X - h*[1;0;0;0], N_fft))
+    approx[:,2] = 1/2h * (DA_1(X + h*[0;1;0;0], N_fft) - DA_1(X - h*[0;1;0;0], N_fft))
+    approx[:,3] = 1/2h * (DA_1(X + h*[0;0;1;0], N_fft) - DA_1(X - h*[0;0;1;0], N_fft))
+    approx[:,4] = 1/2h * (DA_1(X + h*[0;0;0;1], N_fft) - DA_1(X - h*[0;0;0;1], N_fft))
 
     return approx
 end

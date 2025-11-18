@@ -22,8 +22,23 @@ N_fft = 2^14
 # DF_approx!(DF_approx, u, N_fft)
 # println(opnorm(DF-DF_approx))
 
-ψ::Vector{Float64} = rand(3)
-e::Float64 = rand()
+crit_points = [
+    0.24        1.57    4.7     -0.48   3.1992146871613962
+    -0.0090     4.71    4.7     4.8     0.28830893673407454
+    0.75        4.9     6.5     2.8     0.4778866133081419
+    0           0       0       0       3.573680206402789e-7
+]
+
+ψ::Vector{Float64} = 2*pi*rand(3)
+e::Float64 = 0.1
+
+X = [ψ;e]
+
+X , success = newton((X) -> (DA_1(X, N_fft), HA_1_approx(X, N_fft)), X, maxiter = 20, verbose = true)
+
+display(success)
+display(X)
+
 
 
 
