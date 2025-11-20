@@ -6,7 +6,7 @@ include("approx_derivatives.jl")
 # S = Fourier(N, 1.0)
 
 # # N_fft = nextpow(2, 2*N+1)
-N_fft = 2^14
+N_fft = 2^15
 
 # S_pad = Fourier(div(N_fft,2), 1.0)
 
@@ -23,16 +23,18 @@ N_fft = 2^14
 # println(opnorm(DF-DF_approx))
 
 crit_points = [
-    0.24        1.57    4.7     -0.48   3.1992146871613962
-    -0.0090     4.71    4.7     4.8     0.28830893673407454
-    0.75        4.9     6.5     2.8     0.4778866133081419
-    0           0       0       0       3.573680206402789e-7
+    3.1992146871613962      1.0246700507214361
+    0.28830893673407454     -3.765864078823366e-15
+    0.4778866133081419      0.7853981633974457
+    3.573680206402789e-7    0.5376194071422845
 ]
 
-ψ::Vector{Float64} = 2*pi*rand(3)
-e::Float64 = 0.1
+ψ::Vector{Float64} = rand(3)
+e::Float64 = rand()
 
 X = [ψ;e]
+
+X = rand(4)
 
 X , success = newton((X) -> (DA_1(X, N_fft), HA_1_approx(X, N_fft)), X, maxiter = 20, verbose = true)
 
