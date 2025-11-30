@@ -1,6 +1,7 @@
 import FFTW, LinearAlgebra, Integrals, DifferentialEquations
 using RadiiPolynomial, GLMakie, TickTock
 
+include("newton.jl")
 include("helpers.jl")
 include("float_functions.jl")
 include("approx_derivatives.jl")
@@ -42,24 +43,13 @@ DF_approx = zeros(ComplexF64, ℱ^3, ℱ^3)
 
 println("Evaluating function and its derivative")
 
-# tick()
 F!(F, u, ε, N_fft)
-# tock()
-
-# tick()
 DF!(DF, u, ε, N_fft)
-# tock()
-
-# tick()
-# DF_approx!(DF_approx, u, ε, N_fft)
-# tock()
 
 println("Size of kernel before Newton = " * string(size(LinearAlgebra.nullspace(DF.coefficients),2)) * "\n")
-# println("Difference between true derivative and finite differences: " * string(opnorm(DF-DF_approx)) * "\n")
 
 # Applying Newton's method we solve for a numerical solution
-#u, success = newton!((F, DF, u) -> (F!(F, u, ε, N_fft), DF!(DF, u, ε, N_fft)), u, tol = 1e-15)
-Newton!(u, ε, F, DF, tol = 1e-13)
+u = Newton!((F, DF, u) -> (F!(F, u, ε, N_fft), DF!(DF, u, ε, N_fft)), u, F, DF, tol = 1e-13)
 
 println("|u₁[N]| = " * string(norm(component(u,1)[N])) * ", |u₁[-N]| = " * string(norm(component(u,1)[-N])))
 println("|u₂[N]| = " * string(norm(component(u,2)[N])) * ", |u₂[-N]| = " * string(norm(component(u,2)[-N])))

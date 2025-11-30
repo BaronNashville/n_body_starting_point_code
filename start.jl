@@ -7,4 +7,4 @@ import FFTW, LinearAlgebra, Integrals, DifferentialEquations
 using RadiiPolynomial, GLMakie, TickTock
 
 # Launch the program
-include("test.jl")
+include("main.jl")

@@ -149,20 +149,20 @@ function G_of_u_vec2mat!(G_of_u::LinearOperator, u::Sequence, G::Function, N_fft
     end     
 end
 
-function Newton!(u::Sequence, ε::Float64, F::Sequence, DF::LinearOperator; tol::Float64 = 1e-12, max_iter::Int64 = 50)
-    count = 0;
-    F!(F, u, ε, N_fft)
-    DF!(DF, u, ε, N_fft)
-    println("Beginning Newton")
-    while norm(F) > tol && count <= max_iter
-        println("Iteration " * string(count) * ", ||F(u)|| = " * string(norm(F)) * ", ||DF\\F|| = " * string(norm(DF \ F)))
-        u.coefficients[:] = (u - DF \ F).coefficients[:]
-        F!(F, u, ε, N_fft)
-        DF!(DF, u, ε, N_fft)
-        count = count + 1
-    end
-    println("Iteration " * string(count) * ", ||F(u)|| = " * string(norm(F)) * ", ||DF\\F|| = " * string(norm(DF \ F)) * "\nNewton ended after " * string(count) * " iterations. \n")
-end
+# function Newton!(u::Sequence, ε::Float64, F::Sequence, DF::LinearOperator; tol::Float64 = 1e-12, max_iter::Int64 = 50)
+#     count = 0;
+#     F!(F, u, ε, N_fft)
+#     DF!(DF, u, ε, N_fft)
+#     println("Beginning Newton")
+#     while norm(F) > tol && count <= max_iter
+#         println("Iteration " * string(count) * ", ||F(u)|| = " * string(norm(F)) * ", ||DF\\F|| = " * string(norm(DF \ F)))
+#         u.coefficients[:] = (u - DF \ F).coefficients[:]
+#         F!(F, u, ε, N_fft)
+#         DF!(DF, u, ε, N_fft)
+#         count = count + 1
+#     end
+#     println("Iteration " * string(count) * ", ||F(u)|| = " * string(norm(F)) * ", ||DF\\F|| = " * string(norm(DF \ F)) * "\nNewton ended after " * string(count) * " iterations. \n")
+# end
 
 function GradientDescentA(ψ::Vector{Float64}, e::Float64, N_fft::Int64, max_step_size::Float64 = 1e-3, tol::Float64 = 1e-12, max_iter::Int64 = 1000)
     count = 0;
