@@ -2,10 +2,11 @@
 import Pkg
 Pkg.activate("nbody")
 Pkg.instantiate()
-Pkg.resolve()
+# Pkg.resolve()
 
 import FFTW, LinearAlgebra, Integrals, DifferentialEquations
-using RadiiPolynomial, GLMakie, TickTock
+using RadiiPolynomial, LinearAlgebra, GLMakie, TickTock, DifferentialEquations
 
 # Launch the program
-include("main.jl")
+#include("main.jl")
+#include("test.jl")

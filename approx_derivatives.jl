@@ -51,28 +51,28 @@ function Dh_approx(u)
     return approx
 end
 
-function DA_1_approx(X, N_fft)
+function DA_1_approx(X, N_fft, generators)
     h = 1e-6;
 
     approx = zeros(4,1)
 
-    approx[1] = 1/2h * (A_1(X + h*[1;0;0;0], N_fft) - A_1(X - h*[1;0;0;0], N_fft))
-    approx[2] = 1/2h * (A_1(X + h*[0;1;0;0], N_fft) - A_1(X - h*[0;1;0;0], N_fft))
-    approx[3] = 1/2h * (A_1(X + h*[0;0;1;0], N_fft) - A_1(X - h*[0;0;1;0], N_fft))
-    approx[4] = 1/2h * (A_1(X + h*[0;0;0;1], N_fft) - A_1(X - h*[0;0;0;1], N_fft))
+    approx[1] = 1/2h * (A_1_float(X + h*[1;0;0;0], N_fft, generators) - A_1_float(X - h*[1;0;0;0], N_fft, generators))
+    approx[2] = 1/2h * (A_1_float(X + h*[0;1;0;0], N_fft, generators) - A_1_float(X - h*[0;1;0;0], N_fft, generators))
+    approx[3] = 1/2h * (A_1_float(X + h*[0;0;1;0], N_fft, generators) - A_1_float(X - h*[0;0;1;0], N_fft, generators))
+    approx[4] = 1/2h * (A_1_float(X + h*[0;0;0;1], N_fft, generators) - A_1_float(X - h*[0;0;0;1], N_fft, generators))
 
     return approx
 end
 
-function HA_1_approx(X, N_fft)
+function HA_1_approx(X, N_fft, generators)
     h = 1e-6;
 
     approx = zeros(4,4)
 
-    approx[:,1] = 1/2h * (DA_1(X + h*[1;0;0;0], N_fft) - DA_1(X - h*[1;0;0;0], N_fft))
-    approx[:,2] = 1/2h * (DA_1(X + h*[0;1;0;0], N_fft) - DA_1(X - h*[0;1;0;0], N_fft))
-    approx[:,3] = 1/2h * (DA_1(X + h*[0;0;1;0], N_fft) - DA_1(X - h*[0;0;1;0], N_fft))
-    approx[:,4] = 1/2h * (DA_1(X + h*[0;0;0;1], N_fft) - DA_1(X - h*[0;0;0;1], N_fft))
+    approx[:,1] = 1/2h * (DA_1_float(X + h*[1;0;0;0], N_fft, generators) - DA_1_float(X - h*[1;0;0;0], N_fft, generators))
+    approx[:,2] = 1/2h * (DA_1_float(X + h*[0;1;0;0], N_fft, generators) - DA_1_float(X - h*[0;1;0;0], N_fft, generators))
+    approx[:,3] = 1/2h * (DA_1_float(X + h*[0;0;1;0], N_fft, generators) - DA_1_float(X - h*[0;0;1;0], N_fft, generators))
+    approx[:,4] = 1/2h * (DA_1_float(X + h*[0;0;0;1], N_fft, generators) - DA_1_float(X - h*[0;0;0;1], N_fft, generators))
 
     return approx
 end

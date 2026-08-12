@@ -1,17 +1,43 @@
 import FFTW, LinearAlgebra, Integrals, DifferentialEquations
 using RadiiPolynomial, GLMakie, TickTock
 
-include("newton.jl")
+include("algorithms.jl")
 include("helpers.jl")
-include("float_functions.jl")
-include("approx_derivatives.jl")
+include("map.jl")
 
 __save__ = false
-__plot__ = false
+__plot__ = true
 __save_location__ = "./figures/"
 
+starting_values = [
+    [
+        4.94091780239843
+        0.7583354177380563
+        4.386255434244429
+        0.8448356513624653
+    ],
+    [
+        1.3422675047811548
+        0.758335417738055
+        1.8969298729351591
+        0.84483565136246
+    ],
+    [
+        1.3422675047811556
+        5.524849889441536
+        4.386255434244428
+        0.8448356513624582
+    ],
+    [
+        4.940917802398434
+        5.524849889441528
+        1.896929872935161
+        0.8448356513624576
+    ]
+]
+
 # Number of fourier coefficients we want
-N::Int64 = 100
+N::Int64 = 400
 # Size of pertubation
 ε::Float64 = 0
 # Computing projection into higher space for FFT
@@ -26,16 +52,21 @@ N_fft::Int64 = 2^14
 
 # Angles of rotation
 # ψ = [rotation about x axis, rotation about y-axis, rotation about z-axis]
-ψ::Vector{Float64} = [1; 2; 3]
-e::Float64 = 0.5
+ψ::Vector{Float64} = starting_values[1][1:3]
+
+# Eccentricity
+e::Float64 = starting_values[1][4]
+
+# Starting value of angle
 ϕ::Float64 = 0
 
 sample_points, sample_time = kepler_sample(ψ, e, ϕ, N_fft)
+plot_points, plot_time = kepler_sample(ψ, e, ϕ, 500)
 
 u = zeros(ComplexF64, ℱ^3)
-component(u, 1).coefficients[:] = 1 / N_fft * project(Sequence(ℱ_pad, [FFTW.fftshift(FFTW.fft(sample_points[1, :])); 0]), ℱ).coefficients[:]
-component(u, 2).coefficients[:] = 1 / N_fft * project(Sequence(ℱ_pad, [FFTW.fftshift(FFTW.fft(sample_points[2, :])); 0]), ℱ).coefficients[:]
-component(u, 3).coefficients[:] = 1 / N_fft * project(Sequence(ℱ_pad, [FFTW.fftshift(FFTW.fft(sample_points[3, :])); 0]), ℱ).coefficients[:]
+block(u, 1).coefficients[:] = 1 / N_fft * project(Sequence(ℱ_pad, [FFTW.fftshift(FFTW.fft(sample_points[1, :])); 0]), ℱ).coefficients[:]
+block(u, 2).coefficients[:] = 1 / N_fft * project(Sequence(ℱ_pad, [FFTW.fftshift(FFTW.fft(sample_points[2, :])); 0]), ℱ).coefficients[:]
+block(u, 3).coefficients[:] = 1 / N_fft * project(Sequence(ℱ_pad, [FFTW.fftshift(FFTW.fft(sample_points[3, :])); 0]), ℱ).coefficients[:]
 
 F = zeros(ComplexF64, ℱ^3)
 DF = zeros(ComplexF64, ℱ^3, ℱ^3)
@@ -49,16 +80,16 @@ DF!(DF, u, ε, N_fft)
 println("Size of kernel before Newton = " * string(size(LinearAlgebra.nullspace(DF.coefficients), 2)) * "\n")
 
 # Applying Newton's method we solve for a numerical solution
-u = Newton!((F, DF, u) -> (F!(F, u, ε, N_fft), DF!(DF, u, ε, N_fft)), u, F, DF, tol=1e-13)
+u = MyNewton!((F, DF, u) -> (F!(F, u, ε, N_fft), DF!(DF, u, ε, N_fft)), u, F, DF, tol=1e-13)
 
-println("|u₁[N]| = " * string(norm(component(u, 1)[N])) * ", |u₁[-N]| = " * string(norm(component(u, 1)[-N])))
-println("|u₂[N]| = " * string(norm(component(u, 2)[N])) * ", |u₂[-N]| = " * string(norm(component(u, 2)[-N])))
-println("|u₃[N]| = " * string(norm(component(u, 3)[N])) * ", |u₃[-N]| = " * string(norm(component(u, 3)[-N])))
+println("|u₁[N]| = " * string(norm(block(u, 1)[N])) * ", |u₁[-N]| = " * string(norm(block(u, 1)[-N])))
+println("|u₂[N]| = " * string(norm(block(u, 2)[N])) * ", |u₂[-N]| = " * string(norm(block(u, 2)[-N])))
+println("|u₃[N]| = " * string(norm(block(u, 3)[N])) * ", |u₃[-N]| = " * string(norm(block(u, 3)[-N])))
 
 println("Size of kernel after Newton = " * string(size(LinearAlgebra.nullspace(DF.coefficients), 2)) * "\n")
 
 # Plotting using GLMakie
-time_data = collect(LinRange(0, 2 * pi, 1000))
+time_data = collect(LinRange(0, 2 * π, 1000))
 u_data = collection_eval(time_data, u)
 
 sol_plot = Figure(size=(1000, 600))
@@ -70,7 +101,7 @@ sol_ax = Axis3(sol_plot[1, 1], title=L"\text{Approximate solution to the Kepler 
     ylabelsize=20,
     zlabel=L"$u_3$",
     zlabelsize=20,
-    limits=((-2, 2), (-2, 2), (-2, 2))
+    limits=((-1.5, 1.5), (-1.5, 1.5), (-1.5, 1.5))
 )
 
 GLMakie.lines!(sol_ax,
@@ -88,9 +119,9 @@ GLMakie.scatter!(sol_ax,
 )
 
 GLMakie.scatter!(sol_ax,
-    sample_points[1, :],
-    sample_points[2, :],
-    sample_points[3, :],
+    plot_points[1, :],
+    plot_points[2, :],
+    plot_points[3, :],
     label=L"\text{Sample points}"
 )
 
@@ -185,6 +216,7 @@ GLMakie.scatter!(z_ax,
 axislegend("Legend")
 
 if __plot__
+    println("Plotting")
     display(GLMakie.Screen(), sol_plot)
     display(GLMakie.Screen(), coordinates_plot)
 end
