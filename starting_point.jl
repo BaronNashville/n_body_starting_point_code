@@ -210,7 +210,7 @@ function main()
                     end
                     average = 1 / shape_sides * sum(vertices, dims = 2)
                     rot_axis = M * average/norm(average)
-                    push!(axes_sym_plots, lines!(ax, [Point3f(-padding*rot_axis[:]), Point3f(padding*rot_axis[:])], color = (color_pool[1], dual_axes_opacity), linewidth = 4))
+                    push!(axes_sym_plots, lines!(ax, [Point3f(-padding*rot_axis[:]), Point3f(padding*rot_axis[:])], color = (movie_color_pool[1], dual_axes_opacity), linewidth = 4))
                 end
             end
 
