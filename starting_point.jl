@@ -12,10 +12,10 @@ function main()
     proof = false
 
     movie = false
-    picture = true
+    picture = false
 
     __display__ = false
-    __save__ = true
+    __save__ = false
     __save_location__ = "./figures"
 
     show_duals = false
