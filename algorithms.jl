@@ -1,4 +1,3 @@
-
 function MyNewton!(F_DF!, x, F, DF; tol=1e-13, max_iter=20)
     F_DF!(F, DF, x)
     i = 0

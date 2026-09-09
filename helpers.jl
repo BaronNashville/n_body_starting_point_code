@@ -1,36 +1,61 @@
-include("integrate.jl")
-
-function generators_12()
+function generators_12(;symmetries = false)
     A = [
-        1 0 0
-        0 -1 0
-        0 0 -1
+        1  0  0
+        0 -1  0
+        0  0 -1
     ]
 
     B = [
-        0 1 0
-        0 0 1
-        1 0 0
+         0  1  0
+         0  0  1
+         1  0  0
     ]
 
     gen = zeros(Int64, 3, 3, 12)
+    
     gen[:, :, 1] = A^0
     gen[:, :, 2] = B
     gen[:, :, 3] = B^2
+    
     gen[:, :, 4] = A
     gen[:, :, 5] = A * B
     gen[:, :, 6] = A * B^2
+    
     gen[:, :, 7] = B * A
-    gen[:, :, 8] = B^2 * A
-    gen[:, :, 9] = A * B * A
-    gen[:, :, 10] = B * A * B
+    gen[:, :, 8] = B * A * B
+    gen[:, :, 9] = B * A * B^2 
+    
+    gen[:, :, 10] = B^2 * A
     gen[:, :, 11] = B^2 * A * B
-    gen[:, :, 12] = A * B^2 * A * B
+    gen[:, :, 12] = B^2 * A * B^2 
 
-    return gen, 12
+    if symmetries
+        relevant = [1.0, 1.0, 1.0, 0.0]
+        cycle_identification = CSV.read("./data/T_cycle_nonzero.csv", DataFrame)
+        cycle_data = CSV.read("./data/T_cycles_all.csv", DataFrame)
+
+        syms = []
+        for i ∈ 1:nrow(cycle_identification)
+            if relevant[i] == 1
+                current_sym = zeros(Int64, cycle_identification.cycle_order[i], cycle_identification.number_of_cycles[i])
+
+                starting_index = findfirst(==(cycle_identification.distance_class[i]), cycle_data.distance_class)
+
+                for j ∈ 1:cycle_identification.number_of_cycles[i]
+                    current_sym[:,j] = parse.(Int, split(cycle_data.vertices[starting_index + j - 1], ";"))
+                end
+
+                push!(syms, current_sym)
+            end
+        end
+
+        return gen, 12, syms
+    else
+        return gen, 12
+    end
 end
 
-function generators_24()
+function generators_24(;symmetries = false)
     A = [
         0 -1 0
         1 0 0
@@ -38,82 +63,70 @@ function generators_24()
     ]
 
     B = [
-        -1 -0 0
+        -1 0 0
         0 0 1
-        1 0 0
+        0 1 0
     ]
 
     gen = zeros(Int64, 3, 3, 24)
 
-    # for i ∈ 0:3
-    #     gen[:, :, 6*i + 1] = A^i * I
-    #     gen[:, :, 6*i + 2] = A^i * (B)
-    #     gen[:, :, 6*i + 3] = A^i * (B * A)
-    #     gen[:, :, 6*i + 4] = A^i * (B * A * B)
-    #     gen[:, :, 6*i + 5] = A^i * (B * A * B * A)
-    #     gen[:, :, 6*i + 6] = A^i * (B * A * B * A * B)
-    # end
+    gen[:,:,1]  = A^0
+    gen[:,:,2]  = A
+    gen[:,:,3]  = A^2
+    gen[:,:,4]  = A^3
 
-    # gen[:, :, 1]  = A^0
-    # gen[:, :, 2]  = A
-    # gen[:, :, 3]  = B
-    # gen[:, :, 4]  = A^2
-    # gen[:, :, 5]  = B*A
-    # gen[:, :, 6]  = A*B
-    # gen[:, :, 7]  = A^3
-    # gen[:, :, 8]  = B*A^2
-    # gen[:, :, 9]  = A*B*A
-    # gen[:, :, 10] = A^2*B
-    # gen[:, :, 11] = B*A*B
-    # gen[:, :, 12] = B*A^3
-    # gen[:, :, 13] = A*B*A^2
-    # gen[:, :, 14] = A^2*B*A
-    # gen[:, :, 15] = B*A*B*A
-    # gen[:, :, 16] = B*A^2*B
-    # gen[:, :, 17] = A*B*A^3
-    # gen[:, :, 18] = A^2*B*A^2
-    # gen[:, :, 19] = B*A*B*A^2
-    # gen[:, :, 20] = B*A^2*B*A
-    # gen[:, :, 21] = A*B*A^2*B
-    # gen[:, :, 22] = A^2*B*A^3
-    # gen[:, :, 23] = B*A*B*A^3
-    # gen[:, :, 24] = B*A^2*B*A^2
+    gen[:,:,5]  = B * A^2 * B
+    gen[:,:,6]  = B * A^2 * B * A
+    gen[:,:,7]  = B * A^2 * B * A^2
+    gen[:,:,8]  = B * A^2 * B * A^3
 
-    gen[:,:,1]  = [ 1  0  0;  0  1  0;  0  0  1]
+    gen[:,:,9]  = B * A^3
+    gen[:,:,10] = B * A^3 * A
+    gen[:,:,11] = B * A^3 * A^2
+    gen[:,:,12] = B * A^3 * A^3
 
-    gen[:,:,2]  = [ 1  0  0;  0 -1  0;  0  0 -1]
-    gen[:,:,3]  = [-1  0  0;  0  1  0;  0  0 -1]
-    gen[:,:,4]  = [-1  0  0;  0 -1  0;  0  0  1]
+    gen[:,:,13] = A^2 * B * A^3
+    gen[:,:,14] = A^2 * B * A^3 * A
+    gen[:,:,15] = A^2 * B * A^3 * A^2
+    gen[:,:,16] = A^2 * B * A^3 * A^3
 
-    gen[:,:,5]  = [0  1  0;  1  0  0;  0  0 -1]
-    gen[:,:,6]  = [0  1  0; -1  0  0;  0  0  1]
-    gen[:,:,7]  = [0 -1  0;  1  0  0;  0  0  1]
-    gen[:,:,8]  = [0 -1  0; -1  0  0;  0  0 -1]
+    gen[:,:,17] = A^3 * B * A^3
+    gen[:,:,18] = A^3 * B * A^3 * A
+    gen[:,:,19] = A^3 * B * A^3 * A^2
+    gen[:,:,20] = A^3 * B * A^3 * A^3
 
-    gen[:,:,9]  = [0  0  1;  0  1  0; -1  0  0]
-    gen[:,:,10] = [0  0  1;  0 -1  0;  1  0  0]
-    gen[:,:,11] = [0  0 -1;  0  1  0;  1  0  0]
-    gen[:,:,12] = [0  0 -1;  0 -1  0; -1  0  0]
+    gen[:,:,21] = A * B * A^3
+    gen[:,:,22] = A * B * A^3 * A
+    gen[:,:,23] = A * B * A^3 * A^2
+    gen[:,:,24] = A * B * A^3 * A^3
 
-    gen[:,:,13] = [0  1  0;  0  0  1;  1  0  0]
-    gen[:,:,14] = [0  1  0;  0  0 -1; -1  0  0]
-    gen[:,:,15] = [0 -1  0;  0  0  1; -1  0  0]
-    gen[:,:,16] = [0 -1  0;  0  0 -1;  1  0  0]
+    if symmetries
+        relevant = [1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0]
+        cycle_identification = CSV.read("./data/O_cycle_nonzero.csv", DataFrame)
+        cycle_data = CSV.read("./data/O_cycles_all.csv", DataFrame)
 
-    gen[:,:,17] = [0  0  1;  1  0  0;  0  1  0]
-    gen[:,:,18] = [0  0  1; -1  0  0;  0 -1  0]
-    gen[:,:,19] = [0  0 -1;  1  0  0;  0 -1  0]
-    gen[:,:,20] = [0  0 -1; -1  0  0;  0  1  0]
+        syms = []
+        for i ∈ 1:nrow(cycle_identification)
+            if relevant[i] == 1
+                current_sym = zeros(Int64, cycle_identification.cycle_order[i], cycle_identification.number_of_cycles[i])
 
-    gen[:,:,21] = [ 1  0  0; 0  0 -1; 0  1  0]
-    gen[:,:,22] = [ 1  0  0; 0  0  1; 0 -1  0]
-    gen[:,:,23] = [-1  0  0; 0  0  1; 0  1  0]
-    gen[:,:,24] = [-1  0  0; 0  0 -1; 0 -1  0]
+                starting_index = findfirst(==(cycle_identification.distance_class[i]), cycle_data.distance_class)
 
-    return gen, 24
+                for j ∈ 1:cycle_identification.number_of_cycles[i]
+                    current_sym[:,j] = parse.(Int, split(cycle_data.vertices[starting_index + j - 1], ";"))
+                end
+
+                push!(syms, current_sym)
+            end
+        end
+
+        return gen, 24, syms
+    else
+        return gen, 24
+    end
 end
 
-function generators_60()
+function generators_60(;symmetries = false)
     Φ = 1/2 * (1 + sqrt(5))
 
     A = 1/2 * [
@@ -128,142 +141,96 @@ function generators_60()
          0 1 0
     ]
 
-    gen = zeros(3, 3, 60)
-
-    # gen[:, :, 1] = A^0
-    # gen[:, :, 2] = A
-    # gen[:, :, 3] = B
-    # gen[:, :, 4] = B * A
-    # gen[:, :, 5] = A * B
-    # gen[:, :, 6] = B^2
-
-    # gen[:, :, 7] = A * B * A
-    # gen[:, :, 8] = B^2 * A
-    # gen[:, :, 9] = B * A * B
-    # gen[:, :, 10] = A * B^2
-    # gen[:, :, 11] = B * A * B * A
-    # gen[:, :, 12] = A * B^2 * A
-    # gen[:, :, 13] = A * B * A * B
-    # gen[:, :, 14] = B^2 * A * B
-    # gen[:, :, 15] = B * A * B^2
-
-    # gen[:, :, 16] = A * B * A * B * A
-    # gen[:, :, 17] = B^2 * A * B * A
-    # gen[:, :, 18] = B * A * B^2 * A
-    # gen[:, :, 19] = B * A * B * A * B
-    # gen[:, :, 20] = A * B^2 * A * B
-    # gen[:, :, 21] = A * B * A * B^2
-    # gen[:, :, 22] = B^2 * A * B^2
-
-    # gen[:, :, 23] = B * A * B * A * B * A
-    # gen[:, :, 24] = A * B^2 * A * B * A
-    # gen[:, :, 25] = A * B * A * B^2 * A
-    # gen[:, :, 26] = B^2 * A * B^2 * A
-    # gen[:, :, 27] = B^2 * A * B * A * B
-    # gen[:, :, 28] = B * A * B^2 * A * B
-    # gen[:, :, 29] = B * A * B * A * B^2
-
-    # gen[:, :, 30] = B^2 * A * B * A * B * A
-    # gen[:, :, 31] = B * A * B^2 * A * B * A
-    # gen[:, :, 32] = B * A * B * A * B^2 * A
-    # gen[:, :, 33] = A * B^2 * A * B * A * B
-    # gen[:, :, 34] = A * B * A * B^2 * A * B
-    # gen[:, :, 35] = B^2 * A * B^2 * A * B
-    # gen[:, :, 36] = B^2 * A * B * A * B^2
-
-    # gen[:, :, 37] = A * B^2 * A * B * A * B * A
-    # gen[:, :, 38] = A * B * A * B^2 * A * B * A
-    # gen[:, :, 39] = B^2 * A * B^2 * A * B * A
-    # gen[:, :, 40] = B^2 * A * B * A * B^2 * A
-    # gen[:, :, 41] = B * A * B^2 * A * B * A * B
-    # gen[:, :, 42] = B * A * B * A * B^2 * A * B
-    # gen[:, :, 43] = A * B^2 * A * B * A * B^2
-
-    # gen[:, :, 44] = B * A * B^2 * A * B * A * B * A
-    # gen[:, :, 45] = B * A * B * A * B^2 * A * B * A
-    # gen[:, :, 46] = A * B^2 * A * B * A * B^2 * A
-    # gen[:, :, 47] = A * B * A * B^2 * A * B * A * B
-    # gen[:, :, 48] = B^2 * A * B^2 * A * B * A * B
-    # gen[:, :, 49] = B^2 * A * B * A * B^2 * A * B
-    # gen[:, :, 50] = B * A * B^2 * A * B * A * B^2
-
-    # gen[:, :, 51] = A * B * A * B^2 * A * B * A * B * A
-    # gen[:, :, 52] = B^2 * A * B^2 * A * B * A * B * A
-    # gen[:, :, 53] = B^2 * A * B * A * B^2 * A * B * A
-    # gen[:, :, 54] = B * A * B^2 * A * B * A * B^2 * A
-    # gen[:, :, 55] = A * B^2 * A * B * A * B^2 * A * B
-    # gen[:, :, 56] = A * B * A * B^2 * A * B * A * B^2
-
-    # gen[:, :, 57] = A * B^2 * A * B * A * B^2 * A * B * A
-    # gen[:, :, 58] = A * B * A * B^2 * A * B * A * B^2 * A
-    # gen[:, :, 59] = B * A * B^2 * A * B * A * B^2 * A * B
-    # gen[:, :, 60] = B * A * B^2 * A * B * A * B^2 * A * B * A
+    gen = zeros(3,3,60)
 
     gen[:,:,1] = A^0
     gen[:,:,2] = A
     gen[:,:,3] = B
-    gen[:,:,4] = B*A
-    gen[:,:,5] = A*B
+    gen[:,:,4] = B * A
+    gen[:,:,5] = A * B
     gen[:,:,6] = B^2
-    gen[:,:,7] = A*B*A
-    gen[:,:,8] = B^2*A
-    gen[:,:,9] = B*A*B
-    gen[:,:,10] = A*B^2
-    gen[:,:,11] = B*A*B*A
-    gen[:,:,12] = A*B^2*A
-    gen[:,:,13] = A*B*A*B
-    gen[:,:,14] = B^2*A*B
-    gen[:,:,15] = B*A*B^2
-    gen[:,:,16] = A*B*A*B*A
-    gen[:,:,17] = B^2*A*B*A
-    gen[:,:,18] = B*A*B^2*A
-    gen[:,:,19] = B*A*B*A*B
-    gen[:,:,20] = A*B^2*A*B
-    gen[:,:,21] = A*B*A*B^2
-    gen[:,:,22] = B^2*A*B^2
-    gen[:,:,23] = B*A*B*A*B*A
-    gen[:,:,24] = A*B^2*A*B*A
-    gen[:,:,25] = A*B*A*B^2*A
-    gen[:,:,26] = B^2*A*B^2*A
-    gen[:,:,27] = B^2*A*B*A*B
-    gen[:,:,28] = B*A*B^2*A*B
-    gen[:,:,29] = B*A*B*A*B^2
-    gen[:,:,30] = B^2*A*B*A*B*A
-    gen[:,:,31] = B*A*B^2*A*B*A
-    gen[:,:,32] = B*A*B*A*B^2*A
-    gen[:,:,33] = A*B^2*A*B*A*B
-    gen[:,:,34] = A*B*A*B^2*A*B
-    gen[:,:,35] = B^2*A*B^2*A*B
-    gen[:,:,36] = B^2*A*B*A*B^2
-    gen[:,:,37] = A*B^2*A*B*A*B*A
-    gen[:,:,38] = A*B*A*B^2*A*B*A
-    gen[:,:,39] = B^2*A*B^2*A*B*A
-    gen[:,:,40] = B^2*A*B*A*B^2*A
-    gen[:,:,41] = B*A*B^2*A*B*A*B
-    gen[:,:,42] = B*A*B*A*B^2*A*B
-    gen[:,:,43] = A*B^2*A*B*A*B^2
-    gen[:,:,44] = B*A*B^2*A*B*A*B*A
-    gen[:,:,45] = B*A*B*A*B^2*A*B*A
-    gen[:,:,46] = A*B^2*A*B*A*B^2*A
-    gen[:,:,47] = A*B*A*B^2*A*B*A*B
-    gen[:,:,48] = B^2*A*B^2*A*B*A*B
-    gen[:,:,49] = B^2*A*B*A*B^2*A*B
-    gen[:,:,50] = B*A*B^2*A*B*A*B^2
-    gen[:,:,51] = A * B * A * B^2 * A * B * A * B * A         # ABAB²ABABA
-    gen[:,:,52] = B^2 * A * B^2 * A * B * A * B * A           # B²AB²ABABA
-    gen[:,:,53] = B^2 * A * B * A * B^2 * A * B * A           # B²ABAB²ABA
-    gen[:,:,54] = B * A * B^2 * A * B * A * B^2 * A           # BAB²ABAB²A
-    gen[:,:,55] = A * B^2 * A * B * A * B^2 * A * B           # AB²ABAB²AB
-    gen[:,:,56] = A * B * A * B^2 * A * B * A * B^2           # ABAB²ABAB²
-    gen[:,:,57] = A * B^2 * A * B * A * B^2 * A * B * A       # AB²ABAB²ABA
-    gen[:,:,58] = A * B * A * B^2 * A * B * A * B^2 * A       # ABAB²ABAB²A
-    gen[:,:,59] = B * A * B^2 * A * B * A * B^2 * A * B       # BAB²ABAB²AB
-    gen[:,:,60] = B * A * B^2 * A * B * A * B^2 * A * B * A   # BAB²ABAB²ABA
+    gen[:,:,7] = A * B * A
+    gen[:,:,8] = B^2 * A
+    gen[:,:,9] = B * A * B
+    gen[:,:,10] = A * B^2
+    gen[:,:,11] = B * A * B * A
+    gen[:,:,12] = A * B^2 * A
+    gen[:,:,13] = A * B * A * B
+    gen[:,:,14] = B^2 * A * B
+    gen[:,:,15] = B * A * B^2
+    gen[:,:,16] = A * B * A * B * A
+    gen[:,:,17] = B^2 * A * B * A
+    gen[:,:,18] = B * A * B^2 * A
+    gen[:,:,19] = B * A * B * A * B
+    gen[:,:,20] = A * B^2 * A * B
+    gen[:,:,21] = A * B * A * B^2
+    gen[:,:,22] = B^2 * A * B^2
+    gen[:,:,23] = B * A * B * A * B * A
+    gen[:,:,24] = A * B^2 * A * B * A
+    gen[:,:,25] = A * B * A * B^2 * A
+    gen[:,:,26] = B^2 * A * B^2 * A
+    gen[:,:,27] = B^2 * A * B * A * B
+    gen[:,:,28] = B * A * B^2 * A * B
+    gen[:,:,29] = B * A * B * A * B^2
+    gen[:,:,30] = B^2 * A * B * A * B * A
+    gen[:,:,31] = B * A * B^2 * A * B * A
+    gen[:,:,32] = B * A * B * A * B^2 * A
+    gen[:,:,33] = A * B^2 * A * B * A * B
+    gen[:,:,34] = A * B * A * B^2 * A * B
+    gen[:,:,35] = B^2 * A * B^2 * A * B
+    gen[:,:,36] = B^2 * A * B * A * B^2
+    gen[:,:,37] = A * B^2 * A * B * A * B * A
+    gen[:,:,38] = A * B * A * B^2 * A * B * A
+    gen[:,:,39] = B^2 * A * B^2 * A * B * A
+    gen[:,:,40] = B^2 * A * B * A * B^2 * A
+    gen[:,:,41] = B * A * B^2 * A * B * A * B
+    gen[:,:,42] = B * A * B * A * B^2 * A * B
+    gen[:,:,43] = A * B^2 * A * B * A * B^2
+    gen[:,:,44] = B * A * B^2 * A * B * A * B * A
+    gen[:,:,45] = B * A * B * A * B^2 * A * B * A
+    gen[:,:,46] = A * B^2 * A * B * A * B^2 * A
+    gen[:,:,47] = A * B * A * B^2 * A * B * A * B
+    gen[:,:,48] = B^2 * A * B^2 * A * B * A * B
+    gen[:,:,49] = B^2 * A * B * A * B^2 * A * B
+    gen[:,:,50] = B * A * B^2 * A * B * A * B^2
+    gen[:,:,51] = A * B * A * B^2 * A * B * A * B * A
+    gen[:,:,52] = B^2 * A * B^2 * A * B * A * B * A
+    gen[:,:,53] = B^2 * A * B * A * B^2 * A * B * A
+    gen[:,:,54] = B * A * B^2 * A * B * A * B^2 * A
+    gen[:,:,55] = A * B^2 * A * B * A * B^2 * A * B
+    gen[:,:,56] = A * B * A * B^2 * A * B * A * B^2
+    gen[:,:,57] = A * B^2 * A * B * A * B^2 * A * B * A
+    gen[:,:,58] = A * B * A * B^2 * A * B * A * B^2 * A
+    gen[:,:,59] = B * A * B^2 * A * B * A * B^2 * A * B
+    gen[:,:,60] = B * A * B^2 * A * B * A * B^2 * A * B * A
 
-    return gen, 60
+    if symmetries
+        relevant = [1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]
+        cycle_identification = CSV.read("./data/I_cycle_nonzero.csv", DataFrame)
+        cycle_data = CSV.read("./data/I_cycles_all.csv", DataFrame)
+
+        syms = []
+        for i ∈ 1:nrow(cycle_identification)
+            if relevant[i] == 1
+                current_sym = zeros(Int64, cycle_identification.cycle_order[i], cycle_identification.number_of_cycles[i])
+
+                starting_index = findfirst(==(cycle_identification.distance_class[i]), cycle_data.distance_class)
+
+                for j ∈ 1:cycle_identification.number_of_cycles[i]
+                    current_sym[:,j] = parse.(Int, split(cycle_data.vertices[starting_index + j - 1], ";"))
+                end
+
+                push!(syms, current_sym)
+            end
+        end
+
+        return gen, 60, syms
+    else
+        return gen, 60
+    end
 end
 
-function rotation_matrices()
+function rotation_generators()
     J₁ = [
         0 0 0
         0 0 -1
@@ -285,26 +252,7 @@ function rotation_matrices()
     return (J₁, J₂, J₃)
 end
 
-function kepler_sample(ψ::Vector{Float64}, e::Float64, ϕ::Float64, num_points::Int64)
-    # Computing constant c
-    f_c = θ -> (1 + e * cos(θ))^(-2)
-    c = (2 * ((π) / fft_integrate_float(f_c, 2 //1, 2^14)))^(1 / 3)
-
-    # Solving ODE for θ, which lets us compute r, x, y, z
-    f_ode(θ, p, t) = c^(-3) * (1 + e * cos(θ))^2
-    prob = ODEProblem(f_ode, ϕ, (0, 2 * pi))
-    sol = solve(prob, DifferentialEquations.Tsit5(), reltol=1e-14, abstol=1e-14, saveat=LinRange(0, 2 * pi, num_points + 1))
-    θ_grid = sol.u[begin:end-1]
-    point_grid = zeros(3, num_points)
-    for i ∈ 1:num_points
-        r = c^2 / (1 + e * cos(θ_grid[i]))
-        point_grid[1, i] = r * cos(θ_grid[i])
-        point_grid[2, i] = r * sin(θ_grid[i])
-    end
-
-    # Defining rotation matrices
-    J₁, J₂, J₃ = rotation_matrices()
-
+function rotation_matrix(ψ::Vector{Float64})
     𝒥₁ = [
         1 0 0
         0 cos(ψ[1]) -sin(ψ[1])
@@ -321,9 +269,40 @@ function kepler_sample(ψ::Vector{Float64}, e::Float64, ϕ::Float64, num_points:
         0 0 1
     ]
 
-    rot = 𝒥₃ * 𝒥₂ * 𝒥₁
+    return 𝒥₁ * 𝒥₂ * 𝒥₃
+end
 
-    return rot * point_grid, sol.t[begin:end-1]
+function kepler_sample(ψ::Vector{Float64}, e::Float64, ϕ::Float64, num_points::Int64)
+    c = sqrt(1-e^2)
+
+    # Solving ODE for θ, which lets us compute r, x, y, z
+    f_ode(θ, p, t) = c^(-3) * (1 + e * cos(θ))^2
+    prob = ODEProblem(f_ode, ϕ, (0, 2 * pi))
+    sol = solve(prob, DifferentialEquations.Tsit5(), reltol=1e-14, abstol=1e-14, saveat=LinRange(0, 2 * pi, num_points + 1))
+    θ_grid = sol.u[begin:end-1]
+    point_grid = zeros(3, num_points)
+    for i ∈ 1:num_points
+        r = c^2 / (1 + e * cos(θ_grid[i]))
+        point_grid[:,i] = r * cos(θ_grid[i])
+        point_grid[:,i] = r * sin(θ_grid[i])
+    end
+
+    return rotation_matrix(ψ) * point_grid, sol.t[begin:end-1]
+end
+
+function kepler_shape(ψ::Vector{Float64}, e::Float64, ϕ::Float64, num_points::Int64)
+    # Computing constant c
+    c = sqrt(1-e^2)
+    
+    θ_grid = LinRange(ϕ, ϕ + 2*pi, num_points+1)
+    point_grid = zeros(3, num_points)
+    for i ∈ 1:num_points
+        r = c^2 / (1 + e * cos(θ_grid[i]))
+        point_grid[1, i] = r * cos(θ_grid[i])
+        point_grid[2, i] = r * sin(θ_grid[i])
+    end
+
+    return rotation_matrix(ψ) * point_grid
 end
 
 function collection_eval(time_data::Vector{Float64}, u::Sequence)
@@ -336,4 +315,3 @@ function collection_eval(time_data::Vector{Float64}, u::Sequence)
 
     return space_data
 end
-

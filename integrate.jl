@@ -53,8 +53,9 @@ function fft_integrate(f::Function, Q::Rational{Int64}, N_fft::Int64; rigorous::
     # Use it to compute the numerical integral
     # println("Use average to compute integral")
     value = avg * period
+    # display(value)
     # println("Numerical integral = " * string(value))
-    # println("Radius of the integral = " * string(radius(value)))
+    # println("Radius of the integral = " * string(RadiiPolynomial.radius(value)))
 
     if rigorous
         # println("Validating the integral")

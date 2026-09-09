@@ -10,7 +10,6 @@ type: software
 authors:
   - given-names: Kevin
     family-names: Constantineau
-    name-suffix: Mr
     email: kevin.constantineau@mail.mcgill.ca
     affiliation: McGill
 repository-code: 'https://github.com/BaronNashville/n_body_periodic'
